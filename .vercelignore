@@ -1,0 +1,13 @@
+.git
+node_modules
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Asegurarse de que estos archivos NO sean ignorados
+!vercel.json
+!_redirects
+!_routes.json
+!_headers

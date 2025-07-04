@@ -1,0 +1,845 @@
+```json
+{
+  "nombre_archivo": "PNC CC 042025.pdf",
+  "comerciales": {
+    "Hemisphere Trading O": {
+      "transacciones": [
+        {
+          "descripcion": "Payment - Auto Payment Deduction",
+          "monto": -88252.26
+        }
+      ]
+    },
+    "Allia Klipp": {
+      "transacciones": [
+        {
+          "descripcion": "Fineline Technologies",
+          "monto": 144.84
+        },
+        {
+          "descripcion": "Fineline Technologies",
+          "monto": 197.09
+        },
+        {
+          "descripcion": "Fineline Technologies",
+          "monto": 67.30
+        },
+        {
+          "descripcion": "Old Dominion Freight Lin",
+          "monto": 308.55
+        },
+        {
+          "descripcion": "Hp *instant Ink",
+          "monto": 30.44
+        }
+      ]
+    },
+    "Danielle Bury": {
+      "transacciones": [
+        {
+          "descripcion": "Tj Maxx #870",
+          "monto": 33.02
+        },
+        {
+          "descripcion": "Uber *trip",
+          "monto": 13.84
+        },
+        {
+          "descripcion": "Uber *trip",
+          "monto": 76.91
+        },
+        {
+          "descripcion": "Hotel Four Points",
+          "monto": 452.53
+        },
+        {
+          "descripcion": "Hotel Four Points",
+          "monto": 12.03
+        }
+      ]
+    },
+    "Denise Urbach": {
+      "transacciones": [
+        {
+          "descripcion": "Pedidosya Propinas",
+          "monto": 0.23
+        },
+        {
+          "descripcion": "Pedidosya Restaurante",
+          "monto": 15.01
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 1.37
+        },
+        {
+          "descripcion": "Pedidosya Propinas",
+          "monto": 0.23
+        },
+        {
+          "descripcion": "Pedidosya Propinas",
+          "monto": 0.23
+        },
+        {
+          "descripcion": "Pedidosya Restaurante",
+          "monto": 7.84
+        },
+        {
+          "descripcion": "Pedidosya Restaurante",
+          "monto": 10.95
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 1.37
+        },
+        {
+          "descripcion": "Gs1 Us, Inc.",
+          "monto": 750.00
+        }
+      ]
+    },
+    "Fabio Novick": {
+      "transacciones": [
+        {
+          "descripcion": "Starbucks 800-782-7282",
+          "monto": 50.00
+        },
+        {
+          "descripcion": "D J",
+          "monto": 42.40
+        },
+        {
+          "descripcion": "Sunoco 0699995700",
+          "monto": 47.29
+        },
+        {
+          "descripcion": "Restaurant Prime",
+          "monto": 184.43
+        },
+        {
+          "descripcion": "Lga Prebook",
+          "monto": 100.00
+        },
+        {
+          "descripcion": "Delta Air",
+          "monto": 52.68
+        },
+        {
+          "descripcion": "Delta Air",
+          "monto": 52.68
+        },
+        {
+          "descripcion": "Junto Sushi",
+          "monto": 191.89
+        },
+        {
+          "descripcion": "Airport Stop",
+          "monto": 6.73
+        },
+        {
+          "descripcion": "The Ups Store 6271",
+          "monto": 90.00
+        },
+        {
+          "descripcion": "The Chai Center",
+          "monto": 360.00
+        },
+        {
+          "descripcion": "Starbucks 800-782-7282",
+          "monto": 50.00
+        },
+        {
+          "descripcion": "Four Points Bentonvill",
+          "monto": 83.59
+        },
+        {
+          "descripcion": "Bagel Boss",
+          "monto": 141.07
+        },
+        {
+          "descripcion": "Sunoco 0699995700",
+          "monto": 49.88
+        },
+        {
+          "descripcion": "Costco Whse #0240",
+          "monto": 163.66
+        },
+        {
+          "descripcion": "Starbucks 800-782-7282",
+          "monto": 50.00
+        },
+        {
+          "descripcion": "Sunoco 0699995700",
+          "monto": 46.45
+        },
+        {
+          "descripcion": "The Chai Center",
+          "monto": 1540.00
+        },
+        {
+          "descripcion": "Bloomberg* B35252793",
+          "monto": 180.00
+        },
+        {
+          "descripcion": "Lan Airlines",
+          "monto": 4902.31
+        },
+        {
+          "descripcion": "Gulf Oil 92064988",
+          "monto": 46.55
+        },
+        {
+          "descripcion": "Walgreens #9865",
+          "monto": 37.32
+        },
+        {
+          "descripcion": "Staples 00102236",
+          "monto": 69.58
+        }
+      ]
+    },
+    "Ivana Novick": {
+      "transacciones": [
+        {
+          "descripcion": "Box, Inc.",
+          "monto": 16.32
+        },
+        {
+          "descripcion": "Zoom.Com 888-799-9666",
+          "monto": 31.98
+        },
+        {
+          "descripcion": "In *corporate Freight Sav",
+          "monto": 708.21
+        },
+        {
+          "descripcion": "Sps Commerce",
+          "monto": 194.01
+        },
+        {
+          "descripcion": "In *corporate Freight Sav",
+          "monto": 492.47
+        },
+        {
+          "descripcion": "Opc*nassaucnty Phtotkt Sf",
+          "monto": 6.00
+        },
+        {
+          "descripcion": "Opc*nassau Cnty Phototkt",
+          "monto": 50.00
+        },
+        {
+          "descripcion": "Sps Commerce",
+          "monto": 1021.38
+        },
+        {
+          "descripcion": "In *corporate Freight Sav",
+          "monto": 122.84
+        },
+        {
+          "descripcion": "In *corporate Freight Sav",
+          "monto": 363.39
+        },
+        {
+          "descripcion": "In *corporate Freight Sav",
+          "monto": 214.73
+        }
+      ]
+    },
+    "Josue Garcia": {
+      "transacciones": [
+        {
+          "descripcion": "Gulf Oil 90640326",
+          "monto": 86.98
+        },
+        {
+          "descripcion": "Fuel 4 Fort Lee",
+          "monto": 107.86
+        },
+        {
+          "descripcion": "Quick Shop",
+          "monto": 5.20
+        },
+        {
+          "descripcion": "E-Z*passny Rebill",
+          "monto": 305.00
+        },
+        {
+          "descripcion": "Bp#6634703moody Mart 1",
+          "monto": 91.86
+        },
+        {
+          "descripcion": "P M T Fork Lift Corp",
+          "monto": 2149.25
+        },
+        {
+          "descripcion": "Bjs Wholesale #0049",
+          "monto": 55.43
+        },
+        {
+          "descripcion": "Bp#6634703moody Mart 1",
+          "monto": 126.94
+        },
+        {
+          "descripcion": "The Home Depot #6955",
+          "monto": 38.86
+        },
+        {
+          "descripcion": "Bp#6634703moody Mart 1",
+          "monto": 83.59
+        },
+        {
+          "descripcion": "Bp#6634703moody Mart 1",
+          "monto": 26.14
+        },
+        {
+          "descripcion": "Grainger",
+          "monto": 336.32
+        },
+        {
+          "descripcion": "Quench Usa, Inc.",
+          "monto": 146.79
+        },
+        {
+          "descripcion": "Gulf Oil 90640326",
+          "monto": 89.99
+        },
+        {
+          "descripcion": "Amazon Mktpl",
+          "monto": 18.35
+        },
+        {
+          "descripcion": "Amazon Mktpl",
+          "monto": 69.59
+        },
+        {
+          "descripcion": "Bp#6634703moody Mart 1",
+          "monto": 87.43
+        }
+      ]
+    },
+    "Landon Hamel": {
+      "transacciones": [
+        {
+          "descripcion": "Sunoco 0699995700",
+          "monto": 49.32
+        },
+        {
+          "descripcion": "Pmusa 304054 Union Cit",
+          "monto": 0.80
+        },
+        {
+          "descripcion": "Pmusa 200025 Irvington",
+          "monto": 1.15
+        },
+        {
+          "descripcion": "Nycdot Parknyc",
+          "monto": 25.05
+        },
+        {
+          "descripcion": "Sunoco 0699995700",
+          "monto": 54.32
+        },
+        {
+          "descripcion": "Pmusa 304054 Union Cit",
+          "monto": 1.05
+        },
+        {
+          "descripcion": "Pmusa 304092 Passaic N",
+          "monto": 1.20
+        },
+        {
+          "descripcion": "Bp#2880600delta Ditmars",
+          "monto": 60.30
+        }
+      ]
+    },
+    "Meredith Wellen": {
+      "transacciones": [
+        {
+          "descripcion": "Staples 00102202",
+          "monto": 141.14
+        },
+        {
+          "descripcion": "Staples 00102202",
+          "monto": 239.62
+        },
+        {
+          "descripcion": "Four Points Bentonvill",
+          "monto": 6.00
+        },
+        {
+          "descripcion": "Four Points Bentonvill",
+          "monto": 80.59
+        },
+        {
+          "descripcion": "Adobe Inc.",
+          "monto": 21.74
+        }
+      ]
+    },
+    "Nancy Colon": {
+      "transacciones": [
+        {
+          "descripcion": "Lan Airline",
+          "monto": 39.20
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 8.92
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 11.91
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 16.37
+        },
+        {
+          "descripcion": "Farmacity 8689",
+          "monto": 17.13
+        },
+        {
+          "descripcion": "Uber *trip",
+          "monto": 112.13
+        },
+        {
+          "descripcion": "Merpago*anapat",
+          "monto": 5.89
+        },
+        {
+          "descripcion": "Merpago*open25hs",
+          "monto": 6.86
+        },
+        {
+          "descripcion": "Dazzler Toower Recolet",
+          "monto": 7.79
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 0.36
+        },
+        {
+          "descripcion": "Minimarket 3 8878",
+          "monto": 7.26
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 7.33
+        },
+        {
+          "descripcion": "2006 Sa 1384",
+          "monto": 11.87
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 28.68
+        },
+        {
+          "descripcion": "Rock&feller S 9234",
+          "monto": 34.15
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 1.54
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 1.61
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 1.66
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 1.66
+        },
+        {
+          "descripcion": "Los Jardines",
+          "monto": 58.99
+        },
+        {
+          "descripcion": "Merpago*multizeballos",
+          "monto": 4.98
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 1.65
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 1.79
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 1.91
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 1.65
+        },
+        {
+          "descripcion": "Rock&feller S 9234",
+          "monto": 36.72
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 0.92
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 1.66
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 9.19
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 12.90
+        },
+        {
+          "descripcion": "Aerolineas -",
+          "monto": 16.62
+        },
+        {
+          "descripcion": "Hotel Savoy",
+          "monto": 57.40
+        },
+        {
+          "descripcion": "Dazzler Toower Recolet",
+          "monto": 1.33
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 5.04
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 5.38
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 8.51
+        },
+        {
+          "descripcion": "Fausto 6943",
+          "monto": 12.95
+        },
+        {
+          "descripcion": "Merpago*atalayap",
+          "monto": 18.12
+        },
+        {
+          "descripcion": "Payu*ar*uber 9429",
+          "monto": 22.43
+        }
+      ]
+    },
+    "Sharon Pinto": {
+      "transacciones": [
+        {
+          "descripcion": "Intuit *qbooks Online",
+          "monto": 255.56
+        },
+        {
+          "descripcion": "Amazon Web Services",
+          "monto": 640.07
+        },
+        {
+          "descripcion": "Apr*appriver",
+          "monto": 919.31
+        },
+        {
+          "descripcion": "Duo*com",
+          "monto": 90.00
+        },
+        {
+          "descripcion": "Dropbox*lfsj8fxv5g2p",
+          "monto": 750.00
+        },
+        {
+          "descripcion": "Zoho* Zoho-Zoho Corp",
+          "monto": 13.05
+        },
+        {
+          "descripcion": "Dropbox*zbc1vg676p1f",
+          "monto": 27.00
+        },
+        {
+          "descripcion": "Vzwrlss*apocc Visb",
+          "monto": 1259.63
+        },
+        {
+          "descripcion": "Microsoft*store",
+          "monto": 2342.99
+        },
+        {
+          "descripcion": "Microsoft*store",
+          "monto": -117.14
+        },
+        {
+          "descripcion": "The Ups Store 6827",
+          "monto": 52.44
+        }
+      ]
+    },
+    "Suzanne Strazzeri": {
+      "transacciones": [
+        {
+          "descripcion": "Etsy, Inc.",
+          "monto": 3.28
+        },
+        {
+          "descripcion": "Etsy, Inc.",
+          "monto": 1.50
+        },
+        {
+          "descripcion": "Shoprite Hauppauge S1",
+          "monto": 6.09
+        },
+        {
+          "descripcion": "Canva* I04474-73680446",
+          "monto": 29.99
+        },
+        {
+          "descripcion": "Hobby-Lobby #776",
+          "monto": 6.50
+        },
+        {
+          "descripcion": "Expedia 73075150548820",
+          "monto": 307.94
+        },
+        {
+          "descripcion": "Visme",
+          "monto": 297.00
+        },
+        {
+          "descripcion": "Dd *doordash Mangiamom",
+          "monto": 65.81
+        },
+        {
+          "descripcion": "Adobe Inc.",
+          "monto": 21.74
+        },
+        {
+          "descripcion": "Adobe Inc.",
+          "monto": 14.13
+        },
+        {
+          "descripcion": "Adobe Inc.",
+          "monto": 21.74
+        }
+      ]
+    },
+    "Tara Sarris": {
+      "transacciones": [
+        {
+          "descripcion": "Sp Ninja Transfers Dtf",
+          "monto": 196.36
+        },
+        {
+          "descripcion": "
+```
+
+
+Amazon Reta\* Yi4gw9bx3",
+"monto": 15.09
+},
+{
+"descripcion": "Branchinellis",
+"monto": 70.85
+},
+{
+"descripcion": "Dollartree",
+"monto": 27.24
+},
+{
+"descripcion": "Sp Ninja Transfers Dtf",
+"monto": 142.51
+},
+{
+"descripcion": "Adobe *adobe",
+"monto": 21.74
+},
+{
+"descripcion": "Fastsigns",
+"monto": 1305.00
+},
+{
+"descripcion": "Dd *doordash Fordsgara",
+"monto": 107.10
+},
+{
+"descripcion": "Arlo Nomad",
+"monto": 1190.82
+},
+{
+"descripcion": "Uber *trip",
+"monto": 19.35
+},
+{
+"descripcion": "Tst*bagels & Such",
+"monto": 25.69
+},
+{
+"descripcion": "Cvs/pharmacy #02457",
+"monto": 67.66
+},
+{
+"descripcion": "Mta*lirr Station Tix",
+"monto": 20.50
+},
+{
+"descripcion": "Insomnia Cookies -Penn",
+"monto": 21.91
+},
+{
+"descripcion": "Nomad Diner",
+"monto": 75.77
+},
+{
+"descripcion": "Mta*lirr Etix Ticket",
+"monto": 15.25
+},
+{
+"descripcion": "Uber *trip",
+"monto": 23.92
+},
+{
+"descripcion": "Uber *trip",
+"monto": 26.34
+},
+{
+"descripcion": "Mta*lirr Etix Ticket",
+"monto": 35.75
+},
+{
+"descripcion": "Uber *trip",
+"monto": 17.13
+},
+
+"descripcion": "Uber *eats",
+"monto": 197.60
+},
+{
+"descripcion": "Arlo Nomad",
+"monto": 155.44
+},
+{
+"descripcion": "Wetransfer",
+"monto": 25.00
+},
+{
+"descripcion": "Dollartree",
+"monto": 10.93
+},
+{
+"descripcion": "Dollartree",
+"monto": 13.64
+},
+{
+"descripcion": "Tst*le Slice",
+"monto": 22.56
+},
+{
+"descripcion": "Optimum 7840",
+"monto": 275.07
+},
+{
+"descripcion": "Uber *trip",
+"monto": 5.00
+},
+{
+"descripcion": "Officesupply.Com",
+"monto": 102.94
+},
+{
+"descripcion": "Amazon Reta* H381w3hu3",
+"monto": 13.04
+},
+{
+"descripcion": "Amazon Reta* Kx9yn9yc3",
+"monto": 50.24
+},
+{
+"descripcion": "Amazon Reta* Lj5qi8wd3",
+"monto": 114.79
+},
+{
+"descripcion": "Sticker Mule",
+"monto": 242.51
+},
+{
+"descripcion": "Dd *doordash Anthonysc",
+"monto": 93.92
+},
+{
+"descripcion": "Dollar Tree",
+"monto": 31.27
+},
+{
+"descripcion": "Homegoods #233",
+"monto": 58.67
+}
+]
+},
+"Timothy Hawver Scott": {
+"transacciones": \[
+{
+"descripcion": "Hamilton 03280005",
+"monto": 37.30
+},
+{
+"descripcion": "Mta*lirr Etix Ticket",
+"monto": 41.00
+},
+{
+"descripcion": "Hamilton Station Park Ri",
+"monto": 25.75
+},
+{
+"descripcion": "Residence Inn Marriott",
+"monto": 183.55
+},
+{
+"descripcion": "Uber \*trip",
+"monto": 27.93
+},
+{
+"descripcion": "Four Points Bentonvill",
+"monto": 6.16
+},
+{
+"descripcion": "Philadelphia Parking Auth",
+"monto": 56.00
+},
+{
+"descripcion": "American Air",
+"monto": 1153.41
+},
+{
+"descripcion": "American Air",
+"monto": 1153.41
+},
+{
+"descripcion": "Hotel Four Points",
+"monto": 10.48
+},
+{
+"descripcion": "1 2 3 Wok Oviedo",
+"monto": 109.69
+},
+{
+"descripcion": "Ewr Lot P4",
+"monto": 180.00
+}
+]
+}
+}
+}
+
+```
+```
