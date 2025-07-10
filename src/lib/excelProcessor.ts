@@ -6,8 +6,49 @@ declare global {
   }
 }
 
-// Referencia a la variable global
-const XLSX = window.XLSX;
+// Referencia a la variable global con verificación
+let XLSX: any;
+
+// Función para verificar si XLSX está disponible
+function ensureXLSXLoaded(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // Si ya está disponible, usarlo inmediatamente
+    if (window.XLSX) {
+      console.log('XLSX ya está disponible');
+      XLSX = window.XLSX;
+      resolve();
+      return;
+    }
+
+    console.log('XLSX no está disponible, esperando...');
+    
+    // Intentar cargar XLSX dinámicamente si no está disponible
+    const script = document.createElement('script');
+    script.src = 'https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js';
+    script.async = true;
+    
+    script.onload = () => {
+      console.log('XLSX cargado dinámicamente');
+      XLSX = window.XLSX;
+      resolve();
+    };
+    
+    script.onerror = () => {
+      const error = new Error('No se pudo cargar la biblioteca XLSX desde CDN');
+      console.error(error);
+      reject(error);
+    };
+    
+    document.head.appendChild(script);
+    
+    // Establecer un timeout por si acaso
+    setTimeout(() => {
+      if (!window.XLSX) {
+        reject(new Error('Timeout esperando que XLSX se cargue'));
+      }
+    }, 10000); // 10 segundos de timeout
+  });
+}
 import { v4 as uuidv4 } from 'uuid';
 import { Transaction } from '../types';
 
@@ -220,6 +261,10 @@ export const processExcelDirectly = async (file: File): Promise<Transaction[]> =
   console.log('Iniciando procesamiento de Excel directamente...');
   try {
     console.log(`Procesando archivo Excel ${file.name} directamente...`);
+    
+    // Asegurarse de que XLSX esté cargado antes de continuar
+    await ensureXLSXLoaded();
+    console.log('XLSX está listo para usar:', !!XLSX);
     
     // Convertir el archivo a ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
