@@ -13,6 +13,7 @@ import AccountDetail from "./pages/finance/AccountDetail";
 import CommercialClassify from "./pages/finance/CommercialClassify";
 import CommercialTokensPage from "./pages/finance/CommercialTokensPage";
 import CommercialManagementPage from "./pages/finance/CommercialManagementPage";
+import CommercialUsersPage from "./pages/admin/CommercialUsers";
 import TokenLogin from "./pages/TokenLogin";
 import NotFound from "./pages/NotFound";
 import CheckSchema from "./pages/debug/CheckSchema";
@@ -86,6 +87,11 @@ const App = () => (
             <Route path="/finance/commercials" element={
               <ProtectedRoute allowedRoles={['admin', 'finance']}>
                 <CommercialManagementPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/commercial-users" element={
+              <ProtectedRoute requiredRole="admin">
+                <CommercialUsersPage />
               </ProtectedRoute>
             } />
             

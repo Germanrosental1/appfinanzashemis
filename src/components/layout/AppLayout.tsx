@@ -117,6 +117,21 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
+              
+              {/* Usuarios Comerciales - Solo visible para admin */}
+              {user?.role === 'admin' && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive('/admin/commercial-users')}
+                  >
+                    <Link to="/admin/commercial-users">
+                      <User className="size-4" />
+                      <span>Usuarios Comerciales</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarContent>
           
