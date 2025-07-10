@@ -14,14 +14,15 @@ export const createCommercialUser = async (email, name, initialPassword = null) 
     // Generar contraseña aleatoria si no se proporciona
     const password = initialPassword || generateRandomPassword();
     
-    // Crear usuario en Supabase Auth
-    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+    // Crear usuario en Supabase Auth usando signUp en lugar de admin.createUser
+    const { data: authUser, error: authError } = await supabase.auth.signUp({
       email,
       password,
-      email_confirm: true, // El email ya está confirmado
-      user_metadata: {
-        name,
-        role: 'commercial',
+      options: {
+        data: {
+          name,
+          role: 'commercial',
+        }
       }
     });
     
@@ -30,7 +31,12 @@ export const createCommercialUser = async (email, name, initialPassword = null) 
       throw authError;
     }
     
-    // Crear registro en la tabla custom_users
+    // Verificar que el usuario se creó correctamente
+    if (!authUser || !authUser.user) {
+      throw new Error('No se pudo crear el usuario en Auth');
+    }
+    
+    // Crear registro en la tabla users
     const { data: userData, error: userError } = await supabase
       .from('users')
       .insert([{
