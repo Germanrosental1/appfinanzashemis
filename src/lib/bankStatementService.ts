@@ -179,6 +179,11 @@ export const uploadBankStatementToSupabase = async (file: File, transactions: Tr
   try {
     console.log(`Subiendo extracto bancario a Supabase: ${file.name} con ${transactions.length} transacciones`);
     
+    // Verificar que haya transacciones para procesar
+    if (!transactions || transactions.length === 0) {
+      throw new Error('No hay transacciones para guardar. Verifica el procesamiento del archivo.');
+    }
+    
     // Extraer el período del nombre del archivo
     // Ejemplo: "PNC CC 042025.pdf" -> "Abril 2025"
     const monthNames = [
@@ -188,7 +193,7 @@ export const uploadBankStatementToSupabase = async (file: File, transactions: Tr
     
     let period = "2025"; // Valor por defecto
     
-    const fileNameMatch = /(?:PNC|CC)\\s*(\\d{2})(\\d{4})/i.exec(file.name);
+    const fileNameMatch = /(?:PNC|CC)\s*(\d{2})(\d{4})/i.exec(file.name);
     if (fileNameMatch && fileNameMatch[1] && fileNameMatch[2]) {
       const month = parseInt(fileNameMatch[1], 10);
       const year = parseInt(fileNameMatch[2], 10);
@@ -197,6 +202,8 @@ export const uploadBankStatementToSupabase = async (file: File, transactions: Tr
         period = `${monthNames[month - 1]} ${year}`;
       }
     }
+    
+    console.log(`Período detectado: ${period}`);
     
     // Crear el objeto BankStatement
     const bankStatement: BankStatement = {
@@ -209,23 +216,53 @@ export const uploadBankStatementToSupabase = async (file: File, transactions: Tr
       accounts: [...new Set(transactions.map(tx => tx.account))]
     };
     
+    console.log('Objeto BankStatement creado:', bankStatement);
+    
     // Convertir a formato Supabase
     const supabaseBankStatement = convertToSupabaseBankStatement(bankStatement);
+    console.log('Objeto convertido para Supabase:', supabaseBankStatement);
+    
+    // Verificar la conexión a Supabase antes de intentar insertar
+    console.log('Verificando conexión a Supabase...');
+    try {
+      const { data: testData, error: testError } = await supabase.from('bank_statements').select('id').limit(1);
+      if (testError) {
+        console.error('Error al verificar conexión a Supabase:', testError);
+        throw new Error(`Error de conexión a Supabase: ${testError.message}`);
+      }
+      console.log('Conexión a Supabase verificada correctamente');
+    } catch (connError) {
+      console.error('Error al conectar con Supabase:', connError);
+      throw new Error(`No se pudo conectar a Supabase: ${(connError as Error).message}`);
+    }
     
     // Insertar el extracto bancario en Supabase
-    const savedBankStatement = await insertBankStatement(supabaseBankStatement);
-    
-    console.log(`Extracto bancario guardado en Supabase con ID: ${savedBankStatement.id}`);
+    console.log('Insertando extracto bancario en Supabase...');
+    let savedBankStatement;
+    try {
+      savedBankStatement = await insertBankStatement(supabaseBankStatement);
+      console.log(`Extracto bancario guardado en Supabase con ID: ${savedBankStatement.id}`);
+    } catch (insertError) {
+      console.error('Error al insertar extracto bancario:', insertError);
+      throw new Error(`Error al insertar extracto bancario: ${(insertError as Error).message}`);
+    }
     
     // Preparar las transacciones para Supabase
-    const supabaseTransactions = transactions.map(transaction => 
-      convertToSupabaseTransaction(transaction, savedBankStatement.id)
-    );
+    console.log('Preparando transacciones para Supabase...');
+    const supabaseTransactions = transactions.map(transaction => {
+      const converted = convertToSupabaseTransaction(transaction, savedBankStatement.id);
+      return converted;
+    });
     
     // Insertar las transacciones en Supabase
-    await insertTransactions(supabaseTransactions);
-    
-    console.log(`${supabaseTransactions.length} transacciones guardadas en Supabase`);
+    console.log(`Insertando ${supabaseTransactions.length} transacciones en Supabase...`);
+    try {
+      await insertTransactions(supabaseTransactions);
+      console.log(`${supabaseTransactions.length} transacciones guardadas en Supabase`);
+    } catch (transError) {
+      console.error('Error al insertar transacciones:', transError);
+      throw new Error(`Error al insertar transacciones: ${(transError as Error).message}`);
+    }
     
     // Devolver el extracto bancario convertido
     return convertToBankStatement(savedBankStatement);

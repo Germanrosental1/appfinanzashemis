@@ -421,17 +421,52 @@ export const deleteBankStatement = async (bankStatementId: string): Promise<void
  * @returns Promesa que resuelve a las transacciones insertadas
  */
 export const insertTransactions = async (transactions: Omit<SupabaseTransaction, 'created_at'>[]): Promise<SupabaseTransaction[]> => {
-  const { data, error } = await supabase
-    .from('transactions')
-    .insert(transactions)
-    .select();
+  console.log(`Intentando insertar ${transactions.length} transacciones en Supabase`);
   
-  if (error) {
+  // Verificar que haya transacciones para insertar
+  if (!transactions || transactions.length === 0) {
+    console.warn('No hay transacciones para insertar');
+    return [];
+  }
+  
+  // Verificar que todas las transacciones tengan los campos requeridos
+  const invalidTransactions = transactions.filter(t => !t.id || !t.bank_statement_id || !t.date || !t.merchant);
+  if (invalidTransactions.length > 0) {
+    console.error(`Se encontraron ${invalidTransactions.length} transacciones inválidas:`, invalidTransactions);
+    throw new Error(`${invalidTransactions.length} transacciones no tienen los campos requeridos`);
+  }
+  
+  try {
+    // Insertar en lotes más pequeños para evitar problemas con límites de tamaño
+    const BATCH_SIZE = 50;
+    let allInsertedData: SupabaseTransaction[] = [];
+    
+    for (let i = 0; i < transactions.length; i += BATCH_SIZE) {
+      const batch = transactions.slice(i, i + BATCH_SIZE);
+      console.log(`Insertando lote ${Math.floor(i/BATCH_SIZE) + 1} de ${Math.ceil(transactions.length/BATCH_SIZE)} (${batch.length} transacciones)`);
+      
+      const { data, error } = await supabase
+        .from('transactions')
+        .insert(batch)
+        .select();
+      
+      if (error) {
+        console.error(`Error al insertar lote de transacciones ${i}-${i+batch.length}:`, error);
+        throw error;
+      }
+      
+      if (data) {
+        allInsertedData = [...allInsertedData, ...data];
+        console.log(`Lote ${Math.floor(i/BATCH_SIZE) + 1} insertado correctamente: ${data.length} transacciones`);
+      }
+    }
+    
+    console.log(`Total de transacciones insertadas: ${allInsertedData.length} de ${transactions.length}`);
+    return allInsertedData;
+  } catch (error) {
     console.error('Error al insertar transacciones:', error);
     throw error;
   }
-  
-  return data || [];
 };
 
 /**

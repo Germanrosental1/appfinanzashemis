@@ -145,17 +145,29 @@ const FileUpload = () => {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
         const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
         
-        if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('tu_url_de_supabase_aqui')) {
-          // Si no hay credenciales válidas, usar mockData como fallback
-          console.log('No se encontraron credenciales válidas de Supabase, usando mockData como fallback');
-          const { uploadBankStatement } = await import('../../lib/mockData');
-          const newBankStatement = await uploadBankStatement(file, transactions);
-          setProcessingResult(newBankStatement);
-        } else {
-          // Si hay credenciales válidas, usar Supabase
-          console.log('Usando Supabase para guardar el extracto bancario');
+        console.log('Verificando credenciales de Supabase:');
+        console.log('URL configurada:', supabaseUrl ? 'Sí' : 'No');
+        console.log('Key configurada:', supabaseKey ? 'Sí' : 'No');
+        
+        // Usar siempre Supabase con las credenciales por defecto si no están configuradas
+        try {
+          console.log('Intentando guardar en Supabase...');
           const newBankStatement = await uploadBankStatementToSupabase(file, transactions);
+          console.log('Extracto bancario guardado exitosamente:', newBankStatement);
           setProcessingResult(newBankStatement);
+        } catch (supabaseError) {
+          console.error('Error al guardar en Supabase:', supabaseError);
+          
+          // Si falla Supabase, intentar con mockData como fallback
+          console.log('Usando mockData como fallback después del error de Supabase');
+          try {
+            const { uploadBankStatement } = await import('../../lib/mockData');
+            const newBankStatement = await uploadBankStatement(file, transactions);
+            setProcessingResult(newBankStatement);
+          } catch (mockError) {
+            console.error('Error también con mockData:', mockError);
+            throw mockError; // Re-lanzar para que se maneje en el catch exterior
+          }
         }
         
         toast({
