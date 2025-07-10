@@ -32,6 +32,7 @@ export default defineConfig(({ mode }) => ({
     },
     // Optimizaciones para SPA en Vercel
     rollupOptions: {
+      external: ['xlsx'],
       output: {
         manualChunks: undefined,
       },
