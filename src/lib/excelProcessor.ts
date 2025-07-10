@@ -1,4 +1,5 @@
-import * as XLSX from 'xlsx';
+// Importar xlsx con una sintaxis que funcione mejor con Vite/Rollup en Vercel
+import { read, utils, writeFile } from 'xlsx';
 import { v4 as uuidv4 } from 'uuid';
 import { Transaction } from '../types';
 
@@ -187,14 +188,14 @@ export const processExcelDirectly = async (file: File): Promise<Transaction[]> =
     const arrayBuffer = await file.arrayBuffer();
     
     // Leer el archivo Excel con opciones para preservar fechas
-    const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+    const workbook = read(arrayBuffer, { type: 'array', cellDates: true });
     
     // Obtener la primera hoja
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
     
     // Convertir la hoja a JSON
-    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
+    const jsonData = utils.sheet_to_json(worksheet, { header: 1, raw: false });
     
     // Verificar si hay datos
     if (!jsonData || jsonData.length <= 1) {
