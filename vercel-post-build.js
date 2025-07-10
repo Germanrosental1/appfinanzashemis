@@ -25,6 +25,7 @@ fs.writeFileSync(redirectsPath, '/* /index.html 200\n');
 const vercelConfigPath = path.join(distDir, 'vercel.json');
 console.log('Creando archivo vercel.json en dist...');
 fs.writeFileSync(vercelConfigPath, JSON.stringify({
+  "version": 2,
   "routes": [
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html", "status": 200 }

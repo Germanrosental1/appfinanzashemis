@@ -24,10 +24,5 @@
         }
       ]
     }
-  ],
-  "github": {
-    "autoAlias": true,
-    "enabled": true
-  },
-  "cleanUrls": true
+  ]
 }
