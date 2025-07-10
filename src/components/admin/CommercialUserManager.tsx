@@ -130,27 +130,30 @@ const CommercialUserManager: React.FC = () => {
     }
   };
 
-  // Eliminar un usuario comercial
+  // Eliminar un usuario comercial usando la API serverless
   const handleDeleteUser = async (userId: string, email: string) => {
     if (!confirm(`¿Estás seguro de que deseas eliminar al usuario ${email}?`)) {
       return;
     }
 
     try {
-      // Eliminar de la tabla users
-      const { error: userError } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', userId);
-
-      if (userError) throw userError;
-
-      // Eliminar de auth
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      // Llamar a la API serverless para eliminar el usuario
+      const response = await fetch(`/api/delete-commercial-user?userId=${userId}`, {
+        method: 'DELETE',
+      });
       
-      if (authError) throw authError;
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al eliminar usuario');
+      }
 
       toast.success(`Usuario ${email} eliminado con éxito`);
+      
+      // Actualizar la lista de usuarios
+      setUsers(users.filter(user => user.id !== userId));
+      
+      // Recargar la lista completa para asegurarnos de tener datos actualizados
       loadUsers();
     } catch (error: any) {
       toast.error(`Error al eliminar usuario: ${error.message}`);
