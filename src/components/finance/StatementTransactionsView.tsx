@@ -148,31 +148,20 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
       
       // Convertir las transacciones de Supabase a nuestro formato
       const appTransactions = supabaseTransactions.map(tx => {
-        // Validar y normalizar la fecha
-        let validatedDate = tx.date;
-        try {
-          // Verificar si la fecha es válida
-          const dateObj = new Date(tx.date);
-          if (isNaN(dateObj.getTime())) {
-            console.warn(`Fecha inválida detectada al cargar transacción ${tx.id}: ${tx.date}`);
-            validatedDate = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD como fallback
-          } else {
-            // Normalizar al formato YYYY-MM-DD para consistencia
-            validatedDate = dateObj.toISOString().split('T')[0];
-          }
-          
-          // Detectar fechas sospechosas (04/06/2025)
-          if (validatedDate.includes('2025-06-04') || tx.date.includes('04/06/2025')) {
-            console.warn(`Fecha sospechosa detectada (04/06/2025) en transacción ${tx.id}. Esta fecha parece incorrecta.`);
-          }
-        } catch (error) {
-          console.error(`Error al procesar fecha de transacción ${tx.id}:`, error);
-          validatedDate = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD como fallback
+        // IMPORTANTE: Usar la fecha original sin ninguna validación ni normalización
+        // Esto preservará el formato exacto que viene de la base de datos
+        const originalDate = tx.date;
+        
+        console.log(`Usando fecha original para transacción ${tx.id}: ${originalDate}`);
+        
+        // Verificar si la fecha parece estar en formato MM/DD/YYYY (formato estadounidense)
+        if (originalDate && typeof originalDate === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(originalDate)) {
+          console.log(`La fecha ${originalDate} está en formato MM/DD/YYYY (formato estadounidense).`);
         }
         
         return {
           id: tx.id,
-          date: validatedDate,
+          date: originalDate, // Usar la fecha original sin normalización
           account: tx.account,
           merchant: tx.merchant,
           amount: tx.amount,

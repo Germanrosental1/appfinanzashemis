@@ -1,6 +1,7 @@
 import { Transaction } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { shouldIgnoreTransaction, getCommercialByCard } from './businessRules';
+import * as XLSX from 'xlsx';
 
 /**
  * Genera el prompt para OpenAI con las reglas de negocio
@@ -8,13 +9,28 @@ import { shouldIgnoreTransaction, getCommercialByCard } from './businessRules';
  * @returns Prompt con instrucciones y reglas
  */
 const generatePrompt = (pdfText: string): string => {
+  // Obtener la fecha actual para advertir explícitamente que no debe usarse
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth() + 1;
+  const currentDay = currentDate.getDate();
+  const currentYear = currentDate.getFullYear();
+  const currentDateFormatted = `${currentMonth.toString().padStart(2, '0')}/${currentDay.toString().padStart(2, '0')}/${currentYear}`;
+  
   return `
 Analiza el siguiente extracto bancario y extrae todas las transacciones con sus fechas EXACTAS. Organiza las transacciones por comercial.
 
-Reglas importantes:
-1. CRÍTICO: Extrae las fechas EXACTAMENTE como aparecen en el extracto. Usa "posting_date" y "transaction_date" con los valores reales del extracto, no la fecha actual.
-2. Ignora cualquier transacción relacionada con "Hemisphere Trading O" o "Payment - Auto Payment Deduction" con número de cuenta terminando en 1785. Estas son transacciones de sistema, no de comerciales reales.
-3. Asigna las transacciones a los comerciales según los últimos 4 dígitos de la tarjeta:
+⚠️ REGLAS CRÍTICAS SOBRE FECHAS (MÁXIMA PRIORIDAD) ⚠️
+1. OBLIGATORIO: Extrae las fechas EXACTAMENTE como aparecen en el extracto bancario original.
+2. PROHIBIDO: NUNCA uses la fecha actual (${currentDateFormatted}) en ninguna transacción.
+3. PROHIBIDO: NUNCA generes fechas que no estén explícitamente en el extracto.
+4. OBLIGATORIO: Si una fecha aparece como "03/15/2024" en el extracto, debes usar "03/15/2024" exactamente así.
+5. OBLIGATORIO: Si no puedes determinar una fecha con certeza, deja el campo vacío ("").
+6. OBLIGATORIO: Busca cuidadosamente en el extracto las secciones que muestran "Posting Date", "Transaction Date", "Post Date" o similares.
+7. PROHIBIDO: No inventes fechas ni uses la fecha actual como valor predeterminado.
+
+Reglas adicionales:
+1. Ignora cualquier transacción relacionada con "Hemisphere Trading O" o "Payment - Auto Payment Deduction" con número de cuenta terminando en 1785. Estas son transacciones de sistema, no de comerciales reales.
+2. Asigna las transacciones a los comerciales según los últimos 4 dígitos de la tarjeta:
    - 5456: Allia Klipp
    - 0166: Danielle Bury
    - 1463: Denise Urbach
@@ -31,6 +47,12 @@ Reglas importantes:
    - 8012: Tara Sarris
    - 4641: Timothy Hawver Scott
 
+⚠️ INSTRUCCIONES PARA EXTRAER FECHAS ⚠️
+1. Busca en el extracto secciones como "Posting Date", "Transaction Date", "Post Date", etc.
+2. Extrae las fechas EXACTAMENTE como aparecen, sin modificarlas.
+3. Si el extracto muestra "03/15/2024", debes usar "03/15/2024" exactamente así.
+4. Si no encuentras una fecha para alguna transacción, deja el campo vacío.
+
 Extracto bancario:
 ${pdfText}
 
@@ -41,8 +63,8 @@ Devuelve los datos en formato JSON con la siguiente estructura:
       "name": "Nombre del comercial",
       "transactions": [
         {
-          "posting_date": "MM/DD/YYYY",  // IMPORTANTE: Usa la fecha real del extracto, no la fecha actual
-          "transaction_date": "MM/DD/YYYY",  // IMPORTANTE: Usa la fecha real del extracto, no la fecha actual
+          "posting_date": "FECHA EXACTA DEL EXTRACTO",  // ⚠️ PROHIBIDO usar la fecha actual (${currentDateFormatted})
+          "transaction_date": "FECHA EXACTA DEL EXTRACTO",  // ⚠️ PROHIBIDO usar la fecha actual (${currentDateFormatted})
           "account": "XXXX-XXXX-XXXX-1234",
           "supplier": "Nombre del proveedor",
           "amount": 123.45
@@ -52,20 +74,45 @@ Devuelve los datos en formato JSON con la siguiente estructura:
   ]
 }
 
-EJEMPLO DE EXTRACCIÓN CORRECTA:
+EJEMPLOS DE EXTRACCIÓN CORRECTA:
+
+Ejemplo 1:
 Si en el extracto aparece:
-Posting Date: 03/03/2025, Tran Date: 02/28/2025, Account: XXXX-XXXX-XXXX-5456, Supplier: Hp *instant Ink, Amount: 30.40
+Posting Date: 03/03/2024, Tran Date: 02/28/2024, Account: XXXX-XXXX-XXXX-5456, Supplier: Hp *instant Ink, Amount: 30.40
 
 Debe extraerse como:
 {
-  "posting_date": "03/03/2025",
-  "transaction_date": "02/28/2025",
+  "posting_date": "03/03/2024",  // CORRECTO: Fecha exacta del extracto
+  "transaction_date": "02/28/2024",  // CORRECTO: Fecha exacta del extracto
   "account": "XXXX-XXXX-XXXX-5456",
   "supplier": "Hp *instant Ink",
   "amount": 30.40
 }
 
-Asegúrate de incluir todas las transacciones y de que los datos sean precisos. Usa el formato de fecha MM/DD/YYYY. Asigna cada transacción al comercial correcto según el número de tarjeta.`;
+Ejemplo 2:
+Si en el extracto aparece:
+Posting Date: 12/15/2023, Account: XXXX-XXXX-XXXX-2469, Supplier: Amazon, Amount: 45.99
+(Sin fecha de transacción visible)
+
+Debe extraerse como:
+{
+  "posting_date": "12/15/2023",  // CORRECTO: Fecha exacta del extracto
+  "transaction_date": "",  // CORRECTO: Campo vacío porque no hay fecha de transacción
+  "account": "XXXX-XXXX-XXXX-2469",
+  "supplier": "Amazon",
+  "amount": 45.99
+}
+
+Ejemplo 3 (INCORRECTO - NO HAGAS ESTO):
+{
+  "posting_date": "${currentDateFormatted}",  // INCORRECTO: Usaría la fecha actual
+  "transaction_date": "${currentDateFormatted}",  // INCORRECTO: Usaría la fecha actual
+  "account": "XXXX-XXXX-XXXX-1234",
+  "supplier": "Walmart",
+  "amount": 50.00
+}
+
+Asegúrate de incluir todas las transacciones y de que los datos sean precisos. Extrae las fechas EXACTAMENTE como aparecen en el extracto, sin modificarlas. Asigna cada transacción al comercial correcto según el número de tarjeta.`;
 };
 
 interface OpenAITransactionData {
@@ -156,7 +203,7 @@ export const extractTextFromPdf = async (file: File): Promise<string> => {
     const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.entry');
     pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
     
-    // Leer el archivo como ArrayBuffer
+    // Convertir el archivo a ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
     
     // Cargar el documento PDF
@@ -177,7 +224,166 @@ export const extractTextFromPdf = async (file: File): Promise<string> => {
     return extractedText;
   } catch (error) {
     console.error('Error al extraer texto del PDF:', error);
-    throw new Error('No se pudo extraer el texto del PDF');
+    throw new Error('No se pudo extraer el texto del PDF. Asegúrate de que es un archivo PDF válido.');
+  }
+};
+
+/**
+ * Extrae datos de un archivo Excel
+ * @param file Archivo Excel (.xlsx o .xls)
+ * @returns Promesa que resuelve a los datos extraídos y las fechas originales
+ */
+export const extractDataFromExcel = async (file: File): Promise<{ text: string, originalDates: Map<number, string[]> }> => {
+  try {
+    // Convertir el archivo a ArrayBuffer
+    const arrayBuffer = await file.arrayBuffer();
+    
+    // Leer el archivo Excel con opciones para preservar fechas
+    const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+    
+    // Obtener la primera hoja
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+    
+    // Mapa para almacenar las fechas originales por fila
+    const originalDates = new Map<number, string[]>();
+    
+    // Encontrar columnas de fechas
+    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+    const dateColumns: number[] = [];
+    const dateColumnNames: string[] = [];
+    
+    // Buscar encabezados que parezcan fechas o columnas que contengan fechas
+    // Primero buscamos por nombre de encabezado
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: range.s.r, c });
+      const cell = worksheet[cellAddress];
+      if (cell && typeof cell.v === 'string') {
+        const headerName = cell.v.toLowerCase();
+        if (headerName.includes('date') || headerName.includes('fecha') || 
+            headerName.includes('posting') || headerName.includes('tran') || 
+            headerName.includes('transaction')) {
+          dateColumns.push(c);
+          dateColumnNames.push(cell.v);
+          console.log(`Columna de fecha encontrada por nombre: ${cell.v} en columna ${c}`);
+        }
+      }
+    }
+    
+    // Si no encontramos columnas de fecha por nombre, buscamos columnas que contengan valores de fecha
+    if (dateColumns.length === 0) {
+      console.log('No se encontraron columnas de fecha por nombre, buscando por contenido...');
+      // Examinar las primeras filas para encontrar celdas que parezcan fechas
+      const maxRowsToCheck = Math.min(10, range.e.r); // Revisar hasta 10 filas o el máximo disponible
+      
+      for (let c = range.s.c; c <= range.e.c; c++) {
+        let dateCount = 0;
+        
+        for (let r = range.s.r + 1; r <= range.s.r + maxRowsToCheck && r <= range.e.r; r++) {
+          const cellAddress = XLSX.utils.encode_cell({ r, c });
+          const cell = worksheet[cellAddress];
+          
+          if (cell) {
+            // Verificar si es una fecha
+            if ((cell.t === 'd' && cell.v instanceof Date) || 
+                (typeof cell.v === 'string' && /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(cell.v)) ||
+                (typeof cell.v === 'number' && cell.v > 1000)) { // Posible fecha en formato Excel
+              dateCount++;
+            }
+          }
+        }
+        
+        // Si más del 50% de las celdas revisadas parecen fechas, considerar esta columna como de fechas
+        if (dateCount > maxRowsToCheck * 0.5) {
+          const headerCell = worksheet[XLSX.utils.encode_cell({ r: range.s.r, c })];
+          const headerName = headerCell && headerCell.v ? String(headerCell.v) : `Columna ${c}`;
+          dateColumns.push(c);
+          dateColumnNames.push(headerName);
+          console.log(`Columna de fecha encontrada por contenido: ${headerName} en columna ${c} (${dateCount} fechas detectadas)`);
+        }
+      }
+    }
+    
+    // Extraer fechas originales
+    for (let r = range.s.r + 1; r <= range.e.r; r++) { // Empezar desde la fila después del encabezado
+      const rowDates: string[] = [];
+      
+      for (const col of dateColumns) {
+        const cellAddress = XLSX.utils.encode_cell({ r, c: col });
+        const cell = worksheet[cellAddress];
+        
+        if (cell && cell.v) {
+          let dateStr = '';
+          
+          // Si es un objeto Date, formatear como DD/MM/YYYY
+          if (cell.t === 'd' && cell.v instanceof Date) {
+            const date = cell.v as Date;
+            dateStr = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+            console.log(`Fecha encontrada en formato Date: ${dateStr}`);
+          } 
+          // Si es un string que parece fecha
+          else if (typeof cell.v === 'string' && /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(cell.v)) {
+            dateStr = cell.v;
+            console.log(`Fecha encontrada en formato texto: ${dateStr}`);
+          }
+          // Si es un número que podría ser una fecha en formato Excel
+          else if (typeof cell.v === 'number' && cell.v > 1000) { // Las fechas en Excel son números desde 1/1/1900
+            const date = XLSX.SSF.parse_date_code(cell.v);
+            dateStr = `${date.d.toString().padStart(2, '0')}/${date.m.toString().padStart(2, '0')}/${date.y}`;
+            console.log(`Fecha encontrada en formato número Excel: ${dateStr}`);
+          }
+          
+          if (dateStr) {
+            rowDates.push(dateStr);
+          }
+        }
+      }
+      
+      if (rowDates.length > 0) {
+        originalDates.set(r, rowDates);
+        console.log(`Fila ${r}: Fechas originales encontradas: ${rowDates.join(', ')}`);
+      }
+    }
+    
+    // Convertir la hoja a JSON para el texto estructurado
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
+    
+    // Formatear los datos para que sean similares a la estructura que esperaría OpenAI
+    let structuredText = '';
+    
+    // Detectar encabezados
+    const headers = jsonData[0] as string[];
+    const hasHeaders = headers && headers.length > 0;
+    
+    // Si tiene encabezados, usarlos para estructurar los datos
+    if (hasHeaders) {
+      // Añadir encabezados
+      structuredText += headers.join('\t') + '\n';
+      
+      // Añadir datos
+      for (let i = 1; i < jsonData.length; i++) {
+        const row = jsonData[i] as any[];
+        if (row && row.length > 0 && row.some(cell => cell !== null && cell !== undefined && cell !== '')) {
+          structuredText += row.join('\t') + '\n';
+        }
+      }
+    } else {
+      // Si no tiene encabezados claros, simplemente formatear como tabla
+      for (let i = 0; i < jsonData.length; i++) {
+        const row = jsonData[i] as any[];
+        if (row && row.length > 0 && row.some(cell => cell !== null && cell !== undefined && cell !== '')) {
+          structuredText += row.join('\t') + '\n';
+        }
+      }
+    }
+    
+    console.log(`Datos extraídos del Excel: ${structuredText.substring(0, 200)}...`);
+    console.log(`Fechas originales extraídas: ${originalDates.size} filas con fechas`);
+    
+    return { text: structuredText, originalDates };
+  } catch (error) {
+    console.error('Error al extraer datos del Excel:', error);
+    throw new Error('No se pudo extraer los datos del Excel. Asegúrate de que el formato sea correcto.');
   }
 };
 
@@ -947,244 +1153,201 @@ export const processChunk = async (
  * Convierte los datos de OpenAI a nuestro formato de transacciones
  * @param openaiData Datos recibidos de OpenAI
  * @returns Array de transacciones en nuestro formato
+ */
+export const convertOpenAIDataToTransactions = (openaiData: OpenAIResponse): Transaction[] => {
+  const transactions: Transaction[] = [];
+  
+  // Verificar que hay datos
+  if (!openaiData || !openaiData.transactions || !Array.isArray(openaiData.transactions)) {
+    console.error('Datos de OpenAI inválidos o vacíos:', openaiData);
+    return transactions;
+  }
+  
+  // Obtener la fecha actual para comparar
+  const currentDate = new Date();
+  const currentDateFormatted = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth() + 1).toString().padStart(2, '0')}/${currentDate.getFullYear()}`;
+  
+  // Recopilar todas las fechas encontradas en las transacciones para análisis
+  const allDates: string[] = [];
+  
+  openaiData.transactions.forEach(person => {
+    // Verificar que la persona tiene transacciones
+    if (!person.transactions || !Array.isArray(person.transactions)) {
+      return;
+    }
     
-    // Si no hay fecha, registrar error y usar fecha actual como último recurso
-    if (!date) {
-      console.error(`No se encontró fecha en openaiData[${index}]. Datos:`, item);
-      date = new Date().toISOString().split('T')[0];
-    } else {
+    // Procesar cada transacción de la persona
+    person.transactions.forEach(transaction => {
       try {
-        // Intentar convertir la fecha a un objeto Date
-        const dateObj = new Date(date);
+        // Extraer fechas de la transacción
+        const originalPostingDate = transaction.posting_date;
+        const originalTransactionDate = transaction.transaction_date;
         
-        // Si la fecha es inválida, intentar diferentes formatos
-        if (isNaN(dateObj.getTime())) {
-          // Intentar formato dd/mm/yyyy
-          if (typeof date === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(date)) {
-            const [day, month, year] = date.split('/').map(Number);
-            const newDateObj = new Date(year, month - 1, day);
-            if (!isNaN(newDateObj.getTime())) {
-              date = newDateObj.toISOString().split('T')[0];
-              dateParsingSuccessful = true;
-            }
-          }
-          
-          // Si todavía es inválida, registrar error y usar fecha actual
-          if (!dateParsingSuccessful) {
-            console.warn(`Fecha inválida en openaiData[${index}]: ${date}. Usando fecha actual.`);
-            date = new Date().toISOString().split('T')[0];
-          }
-        } else {
-          // Convertir la fecha a formato ISO (YYYY-MM-DD)
-          date = dateObj.toISOString().split('T')[0];
-          dateParsingSuccessful = true;
+        // Registrar las fechas encontradas para análisis
+        if (originalPostingDate) allDates.push(originalPostingDate);
+        if (originalTransactionDate) allDates.push(originalTransactionDate);
+        
+        // Detectar fechas sospechosas (que coincidan con la fecha actual)
+        const isPostingDateSuspicious = originalPostingDate && currentDateFormatted === originalPostingDate;
+        const isTransactionDateSuspicious = originalTransactionDate && currentDateFormatted === originalTransactionDate;
+        
+        if (isPostingDateSuspicious) {
+          console.warn(`⚠️ ALERTA: Fecha de publicación sospechosa detectada (${originalPostingDate}) para ${transaction.supplier}. Coincide con la fecha actual.`);
         }
+        if (isTransactionDateSuspicious) {
+          console.warn(`⚠️ ALERTA: Fecha de transacción sospechosa detectada (${originalTransactionDate}) para ${transaction.supplier}. Coincide con la fecha actual.`);
+        }
+        
+        // Seleccionar la mejor fecha disponible (priorizar transaction_date sobre posting_date)
+        let bestDate = originalTransactionDate || originalPostingDate;
+        
+        // Si la fecha es sospechosa o está vacía, marcarla para corrección posterior
+        if (!bestDate || bestDate === currentDateFormatted || bestDate.includes(currentDate.getFullYear().toString())) {
+          console.log(`Fecha sospechosa o vacía detectada para ${transaction.supplier}: ${bestDate || 'N/A'}. Se marcará para corrección.`);
+          // No asignamos una fecha aquí, se corregirá después con las fechas extraídas del Excel
+        }
+        
+        const newTransaction: Transaction = {
+          id: uuidv4(),
+          date: bestDate || '', // Puede quedar vacío para corrección posterior
+          account: transaction.account || '',
+          merchant: transaction.supplier || '', // Usar supplier en lugar de merchant
+          amount: parseFloat(transaction.amount?.toString() || '0'),
+          currency: 'ARS', // Valor por defecto
+          status: 'pending',
+          assignedTo: null,
+          category: undefined,
+          project: undefined,
+          comments: ''
+        };
+        
+        // Añadir información de diagnóstico a los comentarios
+        if (isPostingDateSuspicious || isTransactionDateSuspicious) {
+          newTransaction.comments += `⚠️ NOTA: Fecha potencialmente incorrecta. Verificar manualmente.`;
+        }
+        
+        transactions.push(newTransaction);
       } catch (error) {
-        console.error(`Error al procesar fecha en openaiData[${index}]:`, error);
-        date = new Date().toISOString().split('T')[0];
+        console.error('Error al procesar transacción:', error, transaction);
       }
-    }
-    
-    // Detectar fechas sospechosas (04/06/2025)
-    if (date.includes('2025-06-04') || (typeof originalDateFormat === 'string' && originalDateFormat.includes('04/06/2025'))) {
-      console.warn(`⚠️ ALERTA: Fecha sospechosa detectada (04/06/2025) en transacción ${index}. Esta fecha parece incorrecta.`);
-    }
-
-    // Validar el monto
-    let amount = parseFloat(item.amount);
-    if (isNaN(amount)) {
-      console.warn(`Monto inválido en openaiData[${index}]: ${item.amount}. Usando 0.`);
-      amount = 0;
-    }
-
-    // Crear un comentario que incluya información sobre la fecha para diagnóstico
-    let comments = item.comments || '';
-    if (originalDateFormat) {
-      comments += `\nFecha original extraída: ${originalDateFormat}`;
-      if (!dateParsingSuccessful) {
-        comments += ' (formato no reconocido)';
-      
-      // Verificar si todas las fechas son iguales (posible error)
-      if (transactions.length > 0 && 
-          transactions.every(t => t.date === formattedPostingDate) && 
-          transactions.length > 5) {
-        console.warn('ADVERTENCIA: Todas las transacciones tienen la misma fecha. Posible error en la extracción.');
-      }
-      
-      // Obtener el comercial según el número de tarjeta
-      const commercial = getCommercialByCard(transaction.account);
-      
-      // Crear la transacción en nuestro formato
-      transactions.push({
-        id: uuidv4(),
-        date: formattedPostingDate, // Usar posting_date como fecha principal
-        account: transaction.account.slice(-4), // Últimos 4 dígitos
-        merchant: transaction.supplier,
-        amount: transaction.amount,
-        currency: 'USD', // Valor por defecto
-        category: undefined,
-        project: undefined,
-        comments: `Comercial: ${commercial} | Fecha transacción: ${formattedTransactionDate}`,
-        status: 'pending' // Estado inicial
-      });
     });
   });
+  
+  // Análisis de fechas encontradas
+  if (allDates.length > 0) {
+    console.log(`Análisis de fechas encontradas en las transacciones:`);
+    console.log(`- Total de fechas: ${allDates.length}`);
+    console.log(`- Fechas únicas: ${new Set(allDates).size}`);
+    console.log(`- Ejemplos de fechas: ${allDates.slice(0, 5).join(', ')}${allDates.length > 5 ? '...' : ''}`);
+  } else {
+    console.warn('No se encontraron fechas en las transacciones procesadas por OpenAI.');
+  }
   
   return transactions;
 };
 
 /**
- * Procesa un archivo PDF con OpenAI usando la estrategia de grupos de comerciales
- * @param file Archivo PDF a procesar
+ * Procesa un archivo (PDF o Excel) con OpenAI usando la estrategia de grupos de comerciales
+ * @param file Archivo a procesar (PDF o Excel)
  * @returns Transacciones extraídas
  */
 export const processWithOpenAI = async (file: File): Promise<Transaction[]> => {
   try {
     console.log(`Procesando archivo ${file.name} con OpenAI...`);
+    
+    // Verificar el tipo de archivo
+    const isPdf = file.type === 'application/pdf';
+    const isExcel = file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+                   file.type === 'application/vnd.ms-excel';
+    
+    if (!isPdf && !isExcel) {
+      throw new Error(`Tipo de archivo no soportado: ${file.type}. Por favor, sube un archivo PDF o Excel (.xlsx, .xls)`);
+    }
+    
+    // Si es un archivo Excel, extraer las fechas originales para usarlas después
+    let excelDates: Map<number, string[]> | null = null;
+    
+    if (isExcel) {
+      try {
+        // Extraer datos y fechas del Excel
+        const excelData = await extractDataFromExcel(file);
+        excelDates = excelData.originalDates;
+        console.log(`Fechas originales extraídas del Excel: ${excelDates.size} filas con fechas`);
+        
+        // Guardar las fechas en localStorage para usarlas después
+        if (excelDates && excelDates.size > 0) {
+          // Convertir el Map a un objeto para almacenarlo
+          const datesObject: Record<string, string[]> = {};
+          excelDates.forEach((dates, row) => {
+            datesObject[row.toString()] = dates;
+          });
+          
+          // Guardar en localStorage con un ID único basado en el nombre del archivo
+          const fileId = file.name.replace(/[^a-zA-Z0-9]/g, '_');
+          localStorage.setItem(`excel_dates_${fileId}`, JSON.stringify(datesObject));
+          console.log(`Fechas guardadas en localStorage con clave: excel_dates_${fileId}`);
+        }
+      } catch (excelError) {
+        console.error('Error al extraer fechas del Excel:', excelError);
+        // Continuar con el procesamiento normal aunque falle la extracción de fechas
+      }
+    }
+    
     // Importar dinámicamente para evitar errores de referencia circular
     const { processWithOpenAIByGroups } = await import('./groupProcessingStrategy');
+    
     // Intentar usar la estrategia de procesamiento por grupos
-    return await processWithOpenAIByGroups(file);
+    const transactions = await processWithOpenAIByGroups(file);
+    
+    // Si tenemos fechas del Excel, intentar corregir las fechas en las transacciones
+    if (isExcel && excelDates && excelDates.size > 0) {
+      console.log('Corrigiendo fechas de transacciones con las fechas originales del Excel...');
+      
+      // Crear un array plano de todas las fechas extraídas
+      const allDates: string[] = [];
+      excelDates.forEach(dates => {
+        dates.forEach(date => allDates.push(date));
+      });
+      
+      console.log(`Fechas disponibles para corrección: ${allDates.join(', ')}`);
+      
+      // Corregir fechas en cada transacción
+      if (allDates.length > 0) {
+        // Ordenar las transacciones para que coincidan mejor con el orden de las fechas en el Excel
+        // Esto asume que las transacciones y las fechas están en un orden similar
+        const sortedTransactions = [...transactions];
+        
+        // Asignar fechas a cada transacción
+        for (let i = 0; i < sortedTransactions.length && i < allDates.length; i++) {
+          const transaction = sortedTransactions[i];
+          const originalDate = allDates[i];
+          
+          // Reemplazar la fecha independientemente de su valor actual
+          console.log(`Asignando fecha original a transacción: ${transaction.merchant} - Fecha asignada: ${originalDate}`);
+          transaction.date = originalDate;
+        }
+        
+        // Si quedan transacciones sin fecha asignada, usar fechas disponibles de forma cíclica
+        if (sortedTransactions.length > allDates.length && allDates.length > 0) {
+          for (let i = allDates.length; i < sortedTransactions.length; i++) {
+            const transaction = sortedTransactions[i];
+            const originalDate = allDates[i % allDates.length]; // Usar fechas de forma cíclica
+            
+            console.log(`Asignando fecha cíclica a transacción adicional: ${transaction.merchant} - Fecha asignada: ${originalDate}`);
+            transaction.date = originalDate;
+          }
+        }
+      }
+    }
+    
+    return transactions;
   } catch (error) {
     console.error('Error en el procesamiento con OpenAI:', error);
     throw error;
   }
 };
 
-/**
- * Convierte los datos de OpenAI a nuestro formato de transacciones
- * @param openaiData Datos recibidos de OpenAI
- * @returns Array de transacciones en nuestro formato
- */
-export const convertOpenAIDataToTransactions = (openaiData: OpenAIResponse): Transaction[] => {
-  const transactions: Transaction[] = [];
-  
-  if (!openaiData || !openaiData.transactions) {
-    console.warn('No se encontraron datos de transacciones en la respuesta de OpenAI');
-    return transactions;
-  }
-  
-  openaiData.transactions.forEach(person => {
-    if (!person.transactions) return;
-    
-    person.transactions.forEach(transaction => {
-      // Ignorar transacciones que deben ser ignoradas según reglas de negocio
-      if (shouldIgnoreTransaction(transaction.supplier, transaction.account)) {
-        return;
-      }
-      
-      // Validar y formatear fechas
-      let formattedPostingDate = '';
-      let formattedTransactionDate = '';
-      let dateParsingSuccessful = false;
-      
-      try {
-        // Intentar parsear la fecha de posting
-        if (transaction.posting_date) {
-          const postingDate = new Date(transaction.posting_date);
-          if (!isNaN(postingDate.getTime())) {
-            formattedPostingDate = postingDate.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-            dateParsingSuccessful = true;
-          } else {
-            // Intentar formato dd/mm/yyyy o mm/dd/yyyy
-            if (typeof transaction.posting_date === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(transaction.posting_date)) {
-              const parts = transaction.posting_date.split('/');
-              // Asumir formato mm/dd/yyyy (formato estadounidense)
-              const month = parseInt(parts[0]) - 1;
-              const day = parseInt(parts[1]);
-              const year = parseInt(parts[2]);
-              
-              const newDateObj = new Date(year, month, day);
-              if (!isNaN(newDateObj.getTime())) {
-                formattedPostingDate = newDateObj.toISOString().split('T')[0];
-                dateParsingSuccessful = true;
-              } else {
-                console.warn(`Fecha de posting inválida: ${transaction.posting_date}, usando formato original`);
-                formattedPostingDate = transaction.posting_date; // Mantener el formato original
-              }
-            } else {
-              console.warn(`Fecha de posting inválida: ${transaction.posting_date}, usando formato original`);
-              formattedPostingDate = transaction.posting_date; // Mantener el formato original
-            }
-          }
-        } else {
-          console.warn('No se encontró fecha de posting, usando fecha de transacción');
-          formattedPostingDate = transaction.transaction_date || new Date().toISOString().split('T')[0];
-        }
-        
-        // Intentar parsear la fecha de transacción
-        if (transaction.transaction_date) {
-          const transactionDate = new Date(transaction.transaction_date);
-          if (!isNaN(transactionDate.getTime())) {
-            formattedTransactionDate = transactionDate.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-          } else {
-            // Intentar formato dd/mm/yyyy o mm/dd/yyyy
-            if (typeof transaction.transaction_date === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(transaction.transaction_date)) {
-              const parts = transaction.transaction_date.split('/');
-              // Asumir formato mm/dd/yyyy (formato estadounidense)
-              const month = parseInt(parts[0]) - 1;
-              const day = parseInt(parts[1]);
-              const year = parseInt(parts[2]);
-              
-              const newDateObj = new Date(year, month, day);
-              if (!isNaN(newDateObj.getTime())) {
-                formattedTransactionDate = newDateObj.toISOString().split('T')[0];
-              } else {
-                console.warn(`Fecha de transacción inválida: ${transaction.transaction_date}, usando formato original`);
-                formattedTransactionDate = transaction.transaction_date; // Mantener el formato original
-              }
-            } else {
-              console.warn(`Fecha de transacción inválida: ${transaction.transaction_date}, usando formato original`);
-              formattedTransactionDate = transaction.transaction_date; // Mantener el formato original
-            }
-          }
-        } else {
-          console.warn('No se encontró fecha de transacción, usando fecha de posting');
-          formattedTransactionDate = formattedPostingDate;
-        }
-        
-        // Detectar fechas sospechosas (04/06/2025)
-        if (formattedPostingDate.includes('2025-06-04') || 
-            (typeof transaction.posting_date === 'string' && transaction.posting_date.includes('04/06/2025')) ||
-            formattedTransactionDate.includes('2025-06-04') || 
-            (typeof transaction.transaction_date === 'string' && transaction.transaction_date.includes('04/06/2025'))) {
-          console.warn(`⚠️ ALERTA: Fecha sospechosa detectada (04/06/2025) en transacción. Esta fecha parece ser la fecha actual y no la fecha real de la transacción.`);
-        }
-      } catch (error) {
-        console.error('Error al validar fechas:', error);
-        formattedPostingDate = transaction.posting_date || new Date().toISOString().split('T')[0];
-        formattedTransactionDate = transaction.transaction_date || formattedPostingDate;
-      }
-      
-      // Verificar si todas las fechas son iguales (posible error)
-      if (transactions.length > 0 && 
-          transactions.every(t => t.date === formattedPostingDate) && 
-          transactions.length > 5) {
-        console.warn('⚠️ ADVERTENCIA: Todas las transacciones tienen la misma fecha. Posible error en la extracción.');
-      }
-      
-      // Obtener el comercial según el número de tarjeta
-      const commercial = getCommercialByCard(transaction.account);
-      
-      // Crear la transacción en nuestro formato
-      transactions.push({
-        id: uuidv4(),
-        date: formattedPostingDate, // Usar posting_date como fecha principal
-        account: transaction.account.slice(-4), // Últimos 4 dígitos
-        merchant: transaction.supplier,
-        amount: transaction.amount,
-        currency: 'USD', // Valor por defecto
-        category: undefined,
-        project: undefined,
-        comments: `Comercial: ${commercial} | Fecha transacción: ${formattedTransactionDate} | Fecha original: ${transaction.posting_date}`,
-        status: 'pending', // Estado inicial
-        assignedTo: commercial
-      });
-    });
-  });
-  
-  return transactions;
-};
+// La función shouldIgnoreTransaction se importa desde businessRules
 
 /**
  * Función para obtener el total de transacciones de una respuesta de OpenAI

@@ -22,6 +22,8 @@ export interface Transaction {
   comments?: string;
   status: "pending" | "classified" | "approved" | "completed";
   assignedTo?: string; // User ID
+  commercial?: string; // Nombre del comercial asociado a la tarjeta
+  cardNumber?: string; // Últimos 4 dígitos de la tarjeta
 }
 
 export interface BankStatement {

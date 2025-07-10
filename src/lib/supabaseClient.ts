@@ -240,10 +240,12 @@ export type SupabaseTransaction = {
   status: 'pending' | 'approved' | 'rejected';
   assigned_to?: string;
   category?: string;
-  subcategory?: string; // Nuevo campo para subcategorías
+  subcategory?: string;
   project?: string;
   comments?: string;
   created_at?: string;
+  commercial?: string; // Nombre del comercial asignado según los últimos 4 dígitos de la tarjeta
+  card_number?: string; // Últimos 4 dígitos del número de tarjeta
 };
 
 // Tipo para los tokens temporales de acceso para comerciales
@@ -254,6 +256,7 @@ export type CommercialAccessToken = {
   expires_at: string;
   created_at: string;
   used: boolean;
+  statement_id: string; // ID del extracto bancario asociado
   created_by?: string; // Opcional hasta que la columna exista en la base de datos
 };
 
@@ -361,22 +364,51 @@ export const getAllBankStatements = async (): Promise<SupabaseBankStatement[]> =
  */
 export const deleteBankStatement = async (bankStatementId: string): Promise<void> => {
   try {
-    // Iniciar una transacción para asegurar que se eliminan tanto el extracto como sus transacciones
-    // Primero eliminamos las transacciones asociadas
+    // Paso 1: Eliminar todos los tokens comerciales asociados al extracto
+    const { error: tokensError } = await supabase
+      .from('commercial_access_tokens')
+      .delete()
+      .eq('statement_id', bankStatementId);
+
+    if (tokensError) {
+      console.error('Error al eliminar tokens comerciales:', tokensError);
+      throw tokensError;
+    }
+
+    // Paso 2: Eliminar notificaciones comerciales si existen
+    const { error: notificationsError } = await supabase
+      .from('commercial_notifications')
+      .delete()
+      .eq('statement_id', bankStatementId);
+
+    if (notificationsError) {
+      console.warn('Error al eliminar notificaciones comerciales:', notificationsError);
+      // Continuamos aunque haya error, ya que podría ser que no existan notificaciones
+    }
+
+    // Paso 3: Eliminar transacciones asociadas
     const { error: transactionsError } = await supabase
       .from('transactions')
       .delete()
       .eq('bank_statement_id', bankStatementId);
 
-    if (transactionsError) throw transactionsError;
+    if (transactionsError) {
+      console.error('Error al eliminar transacciones:', transactionsError);
+      throw transactionsError;
+    }
 
-    // Luego eliminamos el extracto bancario
+    // Paso 4: Eliminar el extracto bancario
     const { error: statementError } = await supabase
       .from('bank_statements')
       .delete()
       .eq('id', bankStatementId);
 
-    if (statementError) throw statementError;
+    if (statementError) {
+      console.error('Error al eliminar extracto bancario:', statementError);
+      throw statementError;
+    }
+
+    console.log('Extracto bancario eliminado correctamente');
   } catch (error) {
     console.error('Error al eliminar el extracto bancario:', error);
     throw error;
@@ -464,10 +496,11 @@ export const createTransaction = async (transaction: Omit<SupabaseTransaction, '
 /**
  * Genera un token de acceso temporal para un comercial
  * @param commercialName Nombre del comercial
+ * @param statementId ID del extracto bancario asociado (opcional)
  * @param expiryDays Número de días hasta que expire el token (por defecto 7)
  * @returns Promesa que resuelve al token generado
  */
-export const generateCommercialAccessToken = async (commercialName: string, expiryDays = 7): Promise<CommercialAccessToken> => {
+export const generateCommercialAccessToken = async (commercialName: string, statementId?: string | number, expiryDays = 7): Promise<CommercialAccessToken> => {
   // Verificar si el usuario está autenticado
   const user = await getCurrentUser();
   let userId = user?.id;
@@ -489,6 +522,7 @@ export const generateCommercialAccessToken = async (commercialName: string, expi
   const newToken: Omit<CommercialAccessToken, 'id' | 'created_at' | 'created_by'> = {
     token,
     commercial_name: commercialName,
+    statement_id: statementId ? String(statementId) : 'general', // Convertir a string y usar 'general' si no se proporciona
     expires_at: expiresAt.toISOString(),
     used: false
     // created_by: userId  // Comentado temporalmente hasta que la columna exista

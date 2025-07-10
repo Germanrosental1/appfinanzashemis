@@ -149,6 +149,8 @@ const TransactionTable = ({ transactions, onTransactionUpdate }: TransactionTabl
             <TableRow>
               <TableHead>Fecha</TableHead>
               <TableHead>Descripción</TableHead>
+              <TableHead>Cuenta</TableHead>
+              <TableHead>Comercial</TableHead>
               <TableHead className="text-right">Importe</TableHead>
               <TableHead>Categoría</TableHead>
               <TableHead>Comentario</TableHead>
@@ -162,6 +164,8 @@ const TransactionTable = ({ transactions, onTransactionUpdate }: TransactionTabl
                 <TableRow key={transaction.id} className={isClassified(transaction, editData) ? "bg-green-50" : ""}>
                   <TableCell>{formatDate(transaction.date)}</TableCell>
                   <TableCell className="font-medium">{transaction.merchant}</TableCell>
+                  <TableCell>{transaction.account}</TableCell>
+                  <TableCell>{transaction.commercial || 'Desconocido'}</TableCell>
                   <TableCell className="text-right font-mono">
                     {formatAmount(transaction.amount, transaction.currency)}
                   </TableCell>

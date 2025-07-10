@@ -1,7 +1,7 @@
 import { Transaction } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+import { extractTextFromPdf, extractDataFromExcel, repairJSON } from './openaiService';
 import { shouldIgnoreTransaction, getCommercialByCard } from './businessRules';
-import { extractTextFromPdf, repairJSON } from './openaiService';
 
 // Función para obtener el mapa completo de comerciales a números de tarjeta
 const getCardMapForCommercials = (): Record<string, string> => {
@@ -651,8 +651,8 @@ const convertOpenAIDataToTransactions = (openaiData: OpenAIResponse): Transactio
   
   console.log('Convirtiendo datos de OpenAI a transacciones. Comerciales:', openaiData.transactions.map(p => p.name).join(', '));
   
-  // Mantener un registro de las fechas para detectar patrones sospechosos
-  const allDates: string[] = [];
+  // Mantener un registro de las fechas originales para detectar patrones sospechosos
+  const allOriginalDates: string[] = [];
   
   // Procesar cada persona/comercial
   openaiData.transactions.forEach(person => {
@@ -674,149 +674,37 @@ const convertOpenAIDataToTransactions = (openaiData: OpenAIResponse): Transactio
         return;
       }
       
-      // Validar y formatear fechas
-      let formattedPostingDate = '';
-      let formattedTransactionDate = '';
-      let dateParsingSuccessful = false;
+      // IMPORTANTE: Usar las fechas originales sin normalización
+      // Esto preservará el formato exacto que viene de OpenAI
+      let originalPostingDate = transaction.posting_date || '';
+      let originalTransactionDate = transaction.transaction_date || '';
       
-      try {
-        // Intentar parsear la fecha de posting
-        if (transaction.posting_date) {
-          const postingDate = new Date(transaction.posting_date);
-          if (!isNaN(postingDate.getTime())) {
-            formattedPostingDate = postingDate.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-            dateParsingSuccessful = true;
-          } else {
-            // Intentar formato dd/mm/yyyy o mm/dd/yyyy
-            if (typeof transaction.posting_date === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(transaction.posting_date)) {
-              const parts = transaction.posting_date.split('/');
-              // Intentar ambos formatos: mm/dd/yyyy y dd/mm/yyyy
-              let newDateObj: Date | null = null;
-              
-              // Primero intentar como mm/dd/yyyy (formato estadounidense)
-              const month1 = parseInt(parts[0]) - 1;
-              const day1 = parseInt(parts[1]);
-              const year1 = parseInt(parts[2]);
-              const dateAttempt1 = new Date(year1, month1, day1);
-              
-              // Luego intentar como dd/mm/yyyy (formato europeo)
-              const day2 = parseInt(parts[0]);
-              const month2 = parseInt(parts[1]) - 1;
-              const year2 = parseInt(parts[2]);
-              const dateAttempt2 = new Date(year2, month2, day2);
-              
-              // Verificar cuál de los dos formatos produce una fecha válida
-              if (!isNaN(dateAttempt1.getTime())) {
-                newDateObj = dateAttempt1;
-              } else if (!isNaN(dateAttempt2.getTime())) {
-                newDateObj = dateAttempt2;
-              }
-              
-              if (newDateObj && !isNaN(newDateObj.getTime())) {
-                formattedPostingDate = newDateObj.toISOString().split('T')[0];
-                dateParsingSuccessful = true;
-              } else {
-                console.warn(`Fecha de posting inválida: ${transaction.posting_date}, usando formato original`);
-                formattedPostingDate = transaction.posting_date; // Mantener el formato original
-              }
-            } else {
-              console.warn(`Fecha de posting inválida: ${transaction.posting_date}, usando formato original`);
-              formattedPostingDate = transaction.posting_date; // Mantener el formato original
-            }
-          }
-        } else {
-          console.warn('No se encontró fecha de posting, usando fecha de transacción');
-          formattedPostingDate = transaction.transaction_date || new Date().toISOString().split('T')[0];
-        }
-        
-        // Intentar parsear la fecha de transacción
-        if (transaction.transaction_date) {
-          const transactionDate = new Date(transaction.transaction_date);
-          if (!isNaN(transactionDate.getTime())) {
-            formattedTransactionDate = transactionDate.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-          } else {
-            // Intentar formato dd/mm/yyyy o mm/dd/yyyy
-            if (typeof transaction.transaction_date === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(transaction.transaction_date)) {
-              const parts = transaction.transaction_date.split('/');
-              // Intentar ambos formatos: mm/dd/yyyy y dd/mm/yyyy
-              let newDateObj: Date | null = null;
-              
-              // Primero intentar como mm/dd/yyyy (formato estadounidense)
-              const month1 = parseInt(parts[0]) - 1;
-              const day1 = parseInt(parts[1]);
-              const year1 = parseInt(parts[2]);
-              const dateAttempt1 = new Date(year1, month1, day1);
-              
-              // Luego intentar como dd/mm/yyyy (formato europeo)
-              const day2 = parseInt(parts[0]);
-              const month2 = parseInt(parts[1]) - 1;
-              const year2 = parseInt(parts[2]);
-              const dateAttempt2 = new Date(year2, month2, day2);
-              
-              // Verificar cuál de los dos formatos produce una fecha válida
-              if (!isNaN(dateAttempt1.getTime())) {
-                newDateObj = dateAttempt1;
-              } else if (!isNaN(dateAttempt2.getTime())) {
-                newDateObj = dateAttempt2;
-              }
-              
-              if (newDateObj && !isNaN(newDateObj.getTime())) {
-                formattedTransactionDate = newDateObj.toISOString().split('T')[0];
-              } else {
-                console.warn(`Fecha de transacción inválida: ${transaction.transaction_date}, usando formato original`);
-                formattedTransactionDate = transaction.transaction_date; // Mantener el formato original
-              }
-            } else {
-              console.warn(`Fecha de transacción inválida: ${transaction.transaction_date}, usando formato original`);
-              formattedTransactionDate = transaction.transaction_date; // Mantener el formato original
-            }
-          }
-        } else {
-          console.warn('No se encontró fecha de transacción, usando fecha de posting');
-          formattedTransactionDate = formattedPostingDate;
-        }
-        
-        // Añadir la fecha a la lista para detectar patrones
-        allDates.push(formattedPostingDate);
-        
-        // Detectar fechas sospechosas (04/06/2025 o 03/06/2025 o fecha actual)
-        const today = new Date();
-        const todayFormatted = today.toISOString().split('T')[0];
-        const todaySlash = `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`;
-        
-        // Lista de fechas sospechosas en diferentes formatos
-        const suspiciousDatePatterns = [
-          '2025-06-04', '2025-06-03', '2025-04-06', '2025-03-06',
-          '04/06/2025', '03/06/2025', '06/04/2025', '06/03/2025',
-          todayFormatted, todaySlash
-        ];
-        
-        // Verificar si la fecha es sospechosa
-        const isSuspiciousDate = suspiciousDatePatterns.some(pattern => 
-          formattedPostingDate.includes(pattern) || 
-          (typeof transaction.posting_date === 'string' && transaction.posting_date.includes(pattern))
-        );
-        
-        if (isSuspiciousDate) {
-          console.warn(`⚠️ ALERTA: Fecha sospechosa detectada (${formattedPostingDate}) en transacción de ${transaction.supplier}. Esta fecha parece ser incorrecta.`);
-          
-          // Generar una fecha más realista basada en la posición de la transacción
-          // Esto asegura que tengamos fechas variadas en lugar de todas iguales
-          const baseDate = new Date(2025, 0, 1); // 1 de enero de 2025 como base
-          const randomOffset = Math.floor(Math.random() * 180); // Hasta 6 meses de variación
-          baseDate.setDate(baseDate.getDate() + randomOffset);
-          
-          // Usar esta fecha más realista en lugar de la sospechosa
-          formattedPostingDate = baseDate.toISOString().split('T')[0];
-          formattedTransactionDate = formattedPostingDate;
-          
-          console.log(`Fecha corregida para transacción de ${transaction.supplier}: ${formattedPostingDate}`);
-        }
-      } catch (error) {
-        console.error('Error al validar fechas:', error);
-        formattedPostingDate = transaction.posting_date || new Date().toISOString().split('T')[0];
-        formattedTransactionDate = transaction.transaction_date || formattedPostingDate;
+      // Registrar información sobre las fechas para depuración
+      console.log(`Transacción de ${transaction.supplier}: Fecha original posting: ${originalPostingDate}, Fecha original transacción: ${originalTransactionDate}`);
+      
+      // Verificar si las fechas están en formato MM/DD/YYYY (formato estadounidense)
+      if (originalPostingDate && typeof originalPostingDate === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(originalPostingDate)) {
+        console.log(`La fecha de posting ${originalPostingDate} está en formato MM/DD/YYYY (formato estadounidense).`);
       }
+      
+      if (originalTransactionDate && typeof originalTransactionDate === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(originalTransactionDate)) {
+        console.log(`La fecha de transacción ${originalTransactionDate} está en formato MM/DD/YYYY (formato estadounidense).`);
+      }
+      
+      // Si no hay fecha de posting, usar la fecha de transacción
+      if (!originalPostingDate && originalTransactionDate) {
+        console.log('No se encontró fecha de posting, usando fecha de transacción');
+        originalPostingDate = originalTransactionDate;
+      }
+      
+      // Si no hay fecha de transacción, usar la fecha de posting
+      if (!originalTransactionDate && originalPostingDate) {
+        console.log('No se encontró fecha de transacción, usando fecha de posting');
+        originalTransactionDate = originalPostingDate;
+      }
+      
+      // Añadir la fecha original a la lista para detectar patrones
+      allOriginalDates.push(originalPostingDate);
       
       // Usar directamente el comercial asignado en el procesamiento de OpenAI
       const assignedCommercial = commercial;
@@ -824,7 +712,7 @@ const convertOpenAIDataToTransactions = (openaiData: OpenAIResponse): Transactio
       // Crear la transacción en nuestro formato
       transactions.push({
         id: uuidv4(),
-        date: formattedPostingDate, // Usar posting_date formateado como fecha principal
+        date: originalPostingDate, // Usar la fecha original sin normalización
         account: transaction.account.slice(-4), // Últimos 4 dígitos
         merchant: transaction.supplier,
         amount: transaction.amount,
@@ -832,74 +720,45 @@ const convertOpenAIDataToTransactions = (openaiData: OpenAIResponse): Transactio
         category: assignedCommercial, // Asignar el comercial como categoría para que aparezca en el dashboard
         assignedTo: assignedCommercial, // Asignar el comercial al campo assignedTo para la agrupación en la interfaz
         project: undefined,
-        comments: `Comercial: ${assignedCommercial} | Fecha original: ${transaction.posting_date} | Fecha transacción: ${transaction.transaction_date}`,
+        comments: `Comercial: ${assignedCommercial} | Fecha original: ${originalPostingDate} | Fecha transacción: ${originalTransactionDate}`,
         status: 'pending' // Estado inicial
       });
     });
   });
   
   // Verificar si todas las fechas son iguales (posible error)
-  if (allDates.length > 5) {
-    const uniqueDates = new Set(allDates);
+  if (allOriginalDates.length > 5) {
+    const uniqueDates = new Set(allOriginalDates);
     if (uniqueDates.size === 1) {
-      console.warn(`⚠️ ADVERTENCIA: Todas las transacciones (${allDates.length}) tienen la misma fecha: ${allDates[0]}. Esto sugiere un problema en la extracción de fechas.`);
+      console.warn(`⚠️ ADVERTENCIA: Todas las transacciones (${allOriginalDates.length}) tienen la misma fecha: ${allOriginalDates[0]}. Esto puede indicar un problema en la extracción de fechas.`);
+      console.warn('Sin embargo, NO se aplicará corrección automática para preservar las fechas originales del extracto.');
       
-      // Corregir el problema de fechas uniformes generando fechas aleatorias para cada transacción
-      console.log('Aplicando corrección automática para diversificar las fechas...');
-      
+      // Agregar una nota en los comentarios para indicar que las fechas podrían necesitar revisión
       for (let i = 0; i < transactions.length; i++) {
-        // Generar una fecha más realista basada en la posición de la transacción
-        const baseDate = new Date(2025, 0, 1); // 1 de enero de 2025 como base
-        const randomOffset = Math.floor(Math.random() * 180); // Hasta 6 meses de variación
-        baseDate.setDate(baseDate.getDate() + randomOffset);
-        
-        // Aplicar la fecha corregida
-        const newDate = baseDate.toISOString().split('T')[0];
-        transactions[i].date = newDate;
-        
-        // Actualizar el comentario para mantener un registro de la fecha original
-        if (!transactions[i].comments.includes('Fecha corregida:')) {
-          transactions[i].comments += ` | Fecha corregida: ${newDate}`;
+        if (!transactions[i].comments.includes('Revisar fecha:')) {
+          transactions[i].comments += ` | Revisar fecha: posible fecha incorrecta (${transactions[i].date})`;
         }
       }
+    } else if (uniqueDates.size < allOriginalDates.length * 0.1 && uniqueDates.size < 3) {
+      console.warn(`⚠️ ADVERTENCIA: Hay muy poca variedad de fechas (${uniqueDates.size} fechas únicas para ${allOriginalDates.length} transacciones). Esto puede indicar un problema en la extracción de fechas.`);
+      console.warn('Sin embargo, NO se aplicará corrección automática para preservar las fechas originales del extracto.');
       
-      console.log(`Corrección completada. Las transacciones ahora tienen fechas variadas.`);
-    } else if (uniqueDates.size < allDates.length * 0.1 && uniqueDates.size < 3) {
-      console.warn(`⚠️ ADVERTENCIA: Hay muy poca variedad de fechas (${uniqueDates.size} fechas únicas para ${allDates.length} transacciones). Esto sugiere un problema en la extracción de fechas.`);
+      // Identificar grupos de fechas para información
+      const dateGroups: Record<string, number> = {};
       
-      // Aplicar corrección similar pero solo a grupos de transacciones con la misma fecha
-      const dateGroups: Record<string, number[]> = {};
-      
-      // Agrupar índices de transacciones por fecha
+      // Contar transacciones por fecha
       for (let i = 0; i < transactions.length; i++) {
         const date = transactions[i].date;
         if (!dateGroups[date]) {
-          dateGroups[date] = [];
+          dateGroups[date] = 0;
         }
-        dateGroups[date].push(i);
+        dateGroups[date]++;
       }
       
-      // Corregir fechas para grupos grandes
-      Object.entries(dateGroups).forEach(([date, indices]) => {
-        // Si hay muchas transacciones con la misma fecha, diversificarlas
-        if (indices.length > 5) {
-          console.log(`Diversificando fechas para ${indices.length} transacciones con fecha ${date}...`);
-          
-          indices.forEach((index) => {
-            // Generar una fecha más realista
-            const baseDate = new Date(2025, 0, 1); // 1 de enero de 2025 como base
-            const randomOffset = Math.floor(Math.random() * 180); // Hasta 6 meses de variación
-            baseDate.setDate(baseDate.getDate() + randomOffset);
-            
-            // Aplicar la fecha corregida
-            const newDate = baseDate.toISOString().split('T')[0];
-            transactions[index].date = newDate;
-            
-            // Actualizar el comentario
-            if (!transactions[index].comments.includes('Fecha corregida:')) {
-              transactions[index].comments += ` | Fecha corregida: ${newDate}`;
-            }
-          });
+      // Registrar información sobre grupos de fechas
+      Object.entries(dateGroups).forEach(([date, count]) => {
+        if (count > 3) {
+          console.log(`Grupo de fecha: ${date} - ${count} transacciones`);
         }
       });
     }
@@ -910,33 +769,78 @@ const convertOpenAIDataToTransactions = (openaiData: OpenAIResponse): Transactio
 };
 
 /**
- * Procesa un archivo PDF con OpenAI extrayendo todas las transacciones
- * @param file Archivo PDF a procesar
+ * Procesa un archivo (PDF o Excel) con OpenAI extrayendo todas las transacciones
+ * @param file Archivo PDF o Excel a procesar
  * @returns Promesa que resuelve a un array de transacciones
  */
 export const processWithOpenAIByGroups = async (file: File): Promise<Transaction[]> => {
   try {
     console.log('Iniciando procesamiento con OpenAI para extraer todas las transacciones...');
     
-    // Extraer texto del PDF
-    const pdfText = await extractTextFromPdf(file);
-    console.log(`Texto extraído del PDF: ${pdfText.length} caracteres`);
+    // Determinar el tipo de archivo
+    const fileType = file.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 
+                    (file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')) ? 'excel' : 
+                    'unknown';
+    
+    console.log(`Tipo de archivo detectado: ${fileType}`);
+    
+    if (fileType === 'unknown') {
+      throw new Error('Tipo de archivo no soportado. Por favor, sube un archivo PDF o Excel (.xlsx, .xls).');
+    }
+    
+    // Variables para almacenar datos extraídos
+    let fileContent = '';
+    let originalDates: Map<number, string[]> | null = null;
+    
+    // Extraer texto/datos del archivo según su tipo
+    if (fileType === 'pdf') {
+      fileContent = await extractTextFromPdf(file);
+      console.log(`Texto extraído del PDF: ${fileContent.length} caracteres`);
+    } else {
+      // Para Excel, extraemos el texto y las fechas originales
+      const excelData = await extractDataFromExcel(file);
+      fileContent = excelData.text;
+      originalDates = excelData.originalDates;
+      
+      // Guardar las fechas originales para usarlas después
+      if (originalDates && originalDates.size > 0) {
+        // Convertir el Map a un objeto para almacenarlo
+        const datesObject: Record<string, string[]> = {};
+        originalDates.forEach((dates, row) => {
+          datesObject[row.toString()] = dates;
+        });
+        
+        // Guardar en localStorage con un ID único basado en el nombre del archivo
+        const fileId = file.name.replace(/[^a-zA-Z0-9]/g, '_');
+        localStorage.setItem(`excel_dates_${fileId}`, JSON.stringify(datesObject));
+        console.log(`Fechas originales guardadas en localStorage con clave: excel_dates_${fileId}`);
+        
+        // Mostrar las fechas encontradas
+        const allDates: string[] = [];
+        originalDates.forEach(dates => dates.forEach(date => allDates.push(date)));
+        console.log(`Fechas originales encontradas: ${allDates.join(', ')}`);
+      } else {
+        console.warn('No se encontraron fechas originales en el archivo Excel.');
+      }
+      
+      console.log(`Datos extraídos del Excel: ${fileContent.length} caracteres`);
+    }
     
     // Definir el punto de división (Landon Hamel)
     const divisionPoint = 'Landon Hamel';
     
     // Buscar la posición de Landon Hamel en el texto
-    const divisionPosition = pdfText.indexOf(divisionPoint);
+    const divisionPosition = fileContent.indexOf(divisionPoint);
     
     if (divisionPosition === -1) {
       console.warn(`No se encontró el punto de división "${divisionPoint}" en el texto. Intentando procesamiento completo...`);
       // Si no se encuentra el punto de división, intentar procesar todo el texto
-      return await procesarTextoCompleto(pdfText);
+      return await procesarTextoCompleto(fileContent);
     }
     
     // Dividir el texto en dos partes: antes y después de Landon Hamel
-    const primeraParte = pdfText.substring(0, divisionPosition);
-    const segundaParte = pdfText.substring(divisionPosition);
+    const primeraParte = fileContent.substring(0, divisionPosition);
+    const segundaParte = fileContent.substring(divisionPosition);
     
     console.log(`PDF dividido en dos partes: 
       - Primera parte (hasta ${divisionPoint}): ${primeraParte.length} caracteres
@@ -978,12 +882,46 @@ export const processWithOpenAIByGroups = async (file: File): Promise<Transaction
     // Si no se encontraron transacciones, intentar con el procesamiento tradicional
     if (totalTransactions === 0) {
       console.warn('No se encontraron transacciones con el procesamiento por grupos. Intentando procesamiento tradicional...');
-      return await procesarTextoCompleto(pdfText);
+      return await procesarTextoCompleto(fileContent);
     }
     
     // Convertir los datos de OpenAI a nuestro formato de transacciones
     const transactions = convertOpenAIDataToTransactions(allTransactionsResult);
     console.log(`Conversión completada. Total de transacciones: ${transactions.length}`);
+    
+    // Si es un archivo Excel y tenemos fechas originales, aplicarlas a las transacciones
+    if (fileType === 'excel' && originalDates && originalDates.size > 0) {
+      console.log('Aplicando fechas originales del Excel a las transacciones...');
+      
+      // Crear un array plano con todas las fechas originales
+      const allDates: string[] = [];
+      originalDates.forEach(dates => dates.forEach(date => allDates.push(date)));
+      
+      if (allDates.length > 0) {
+        console.log(`Fechas originales disponibles: ${allDates.length}`);
+        console.log(`Ejemplos de fechas: ${allDates.slice(0, 5).join(', ')}${allDates.length > 5 ? '...' : ''}`);
+        
+        // Aplicar fechas a las transacciones en orden
+        for (let i = 0; i < transactions.length && i < allDates.length; i++) {
+          const transaction = transactions[i];
+          const originalDate = allDates[i];
+          
+          console.log(`Aplicando fecha original a transacción ${i+1}: ${transaction.merchant} - Fecha: ${originalDate}`);
+          transaction.date = originalDate;
+        }
+        
+        // Si hay más transacciones que fechas, usar fechas de forma cíclica
+        if (transactions.length > allDates.length && allDates.length > 0) {
+          for (let i = allDates.length; i < transactions.length; i++) {
+            const transaction = transactions[i];
+            const originalDate = allDates[i % allDates.length]; // Usar fechas de forma cíclica
+            
+            console.log(`Aplicando fecha cíclica a transacción adicional ${i+1}: ${transaction.merchant} - Fecha: ${originalDate}`);
+            transaction.date = originalDate;
+          }
+        }
+      }
+    }
     
     return transactions;
   } catch (error) {

@@ -45,12 +45,6 @@ const FinanceDashboard = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">Dashboard Financiero</h1>
-          <Link to="/finance/integration">
-            <Button className="flex items-center">
-              <Database className="mr-2 h-4 w-4" />
-              Integración de Datos
-            </Button>
-          </Link>
         </div>
         
         <DashboardMetricsCard metrics={metrics} />

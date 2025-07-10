@@ -86,20 +86,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               
-              {/* Integración - Visible para admin y finance */}
-              {(user?.role === 'admin' || user?.role === 'finance') && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive('/finance/integration')}
-                  >
-                    <Link to="/finance/integration">
-                      <Upload className="size-4" />
-                      <span>Integración</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
+
               
               {/* Transacciones - Visible para commercial */}
               {user?.role === 'commercial' && (

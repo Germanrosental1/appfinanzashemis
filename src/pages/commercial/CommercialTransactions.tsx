@@ -27,11 +27,14 @@ const CommercialTransactions = () => {
       setLoading(true);
       
       // Obtener transacciones asignadas al comercial por su nombre
+      // Ahora buscamos tanto en assigned_to como en el nuevo campo commercial
       const { data, error } = await supabase
         .from('transactions')
         .select('*')
-        .eq('assigned_to', user.name)
+        .or(`assigned_to.eq.${user.name},commercial.eq.${user.name}`)
         .order('date', { ascending: false });
+        
+      console.log('Buscando transacciones para comercial:', user.name);
       
       if (error) {
         console.error('Error al obtener transacciones:', error);
@@ -44,20 +47,25 @@ const CommercialTransactions = () => {
       }
       
       // Formatear las transacciones al formato esperado por el componente
-      const formattedTransactions: Transaction[] = data.map(t => ({
-        id: t.id,
-        date: t.date,
-        description: t.description,
-        amount: t.amount,
-        currency: t.currency || 'EUR',
-        category: t.category || '',
-        subcategory: t.subcategory || '',
-        comments: t.comments || '',
-        status: t.status || 'pending',
-        assignedTo: t.assigned_to || '',
-        account: t.account || '',
-        merchant: t.merchant || ''
-      }));
+      const formattedTransactions: Transaction[] = data.map(t => {
+        console.log('Transacción encontrada:', t);
+        return {
+          id: t.id,
+          date: t.date,
+          description: t.description,
+          amount: t.amount,
+          currency: t.currency || 'USD', // Cambiado a USD como predeterminado
+          category: t.category || '',
+          subcategory: t.subcategory || '',
+          comments: t.comments || '',
+          status: t.status || 'pending',
+          assignedTo: t.assigned_to || '',
+          account: t.account || '',
+          merchant: t.merchant || '',
+          commercial: t.commercial || '', // Incluir el campo commercial
+          cardNumber: t.card_number || '' // Incluir el campo cardNumber
+        };
+      });
       
       // Usar todas las transacciones sin filtrar por mes
       setTransactions(formattedTransactions);

@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import LoginPage from "./pages/LoginPage";
 import FinanceDashboard from "./pages/finance/FinanceDashboard";
-import DataIntegration from "./pages/finance/DataIntegration";
+
 import CommercialTransactions from "./pages/commercial/CommercialTransactions";
 import AccountDetail from "./pages/finance/AccountDetail";
 import CommercialClassify from "./pages/finance/CommercialClassify";
@@ -77,11 +77,7 @@ const App = () => (
                 <AccountDetail />
               </ProtectedRoute>
             } />
-            <Route path="/finance/integration" element={
-              <ProtectedRoute>
-                <DataIntegration />
-              </ProtectedRoute>
-            } />
+
             <Route path="/finance/commercial-tokens" element={
               <ProtectedRoute allowedRoles={['admin', 'finance']}>
                 <CommercialTokensPage />
