@@ -19,11 +19,17 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    include: ['xlsx']
+  },
   // Asegurar que las rutas funcionen correctamente en producción
   base: "/",
   build: {
     outDir: "dist",
     assetsDir: "assets",
+    commonjsOptions: {
+      include: [/xlsx/, /node_modules/],
+    },
     // Optimizaciones para SPA en Vercel
     rollupOptions: {
       output: {
