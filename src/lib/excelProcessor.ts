@@ -79,6 +79,24 @@ function extractCardNumber(text: string): string | null {
     return altMatch[1];
   }
   
+  // Buscar patrones como "Card: 2153" o "Card #2153"
+  const cardLabelPattern = /(?:card|card #|card no|card number|tarjeta|tarjeta #)[:\s]*(\d{4})(?:\s|$)/i;
+  const cardLabelMatch = textStr.match(cardLabelPattern);
+  
+  if (cardLabelMatch && cardLabelMatch[1]) {
+    console.log('Número de tarjeta con etiqueta encontrado:', cardLabelMatch[1]);
+    return cardLabelMatch[1];
+  }
+  
+  // Buscar patrones como "XXXX2153" o "XXXX 2153"
+  const maskedPattern = /(?:x{4}|\*{4})[\s-]?(\d{4})(?:\s|$)/i;
+  const maskedMatch = textStr.match(maskedPattern);
+  
+  if (maskedMatch && maskedMatch[1]) {
+    console.log('Número de tarjeta enmascarado encontrado:', maskedMatch[1]);
+    return maskedMatch[1];
+  }
+  
   // Último intento: buscar cualquier secuencia de 4 dígitos al final del texto
   const lastFourDigits = textStr.match(/(\d{4})\s*$/); 
   if (lastFourDigits && lastFourDigits[1]) {
@@ -92,10 +110,21 @@ function extractCardNumber(text: string): string | null {
 
 // Función para obtener el comercial asociado a un número de tarjeta
 function getCommercialByCardNumber(cardNumber: string | null): string {
-  if (!cardNumber) return 'Desconocido';
+  if (!cardNumber) {
+    console.log('No se proporcionó número de tarjeta para asignar comercial');
+    return 'Desconocido';
+  }
   
-  // Si el número de tarjeta no está en el mapeo, devolver 'Desconocido'
-  return CARD_TO_COMMERCIAL_MAP[cardNumber] || 'Desconocido';
+  // Verificar si el número de tarjeta está en el mapeo
+  const commercial = CARD_TO_COMMERCIAL_MAP[cardNumber];
+  
+  if (commercial) {
+    console.log(`Tarjeta ${cardNumber} asignada a comercial: ${commercial}`);
+    return commercial;
+  } else {
+    console.log(`Tarjeta ${cardNumber} no encontrada en el mapeo de comerciales`);
+    return 'Desconocido';
+  }
 }
 
 /**
@@ -416,6 +445,14 @@ export const processExcelDirectly = async (file: File): Promise<Transaction[]> =
             if (accountValue) {
               cardNumber = extractCardNumber(accountValue.toString());
               console.log(`Cuenta: ${accountValue}, Número de tarjeta extraido: ${cardNumber}`);
+            }
+            
+            // Si no se encontró en el campo de cuenta, intentar extraerlo del campo de comerciante
+            if (!cardNumber && merchantValue) {
+              cardNumber = extractCardNumber(merchantValue.toString());
+              if (cardNumber) {
+                console.log(`Número de tarjeta extraído del campo de comerciante: ${cardNumber}`);
+              }
             }
             
             // Obtener el comercial asociado al número de tarjeta
