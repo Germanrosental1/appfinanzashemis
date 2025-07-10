@@ -1,16 +1,16 @@
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { useToast } from "@/hooks/use-toast";
-import { uploadBankStatement } from "@/lib/mockData";
-import { Upload, FileType, AlertCircle, CheckCircle, Beaker, FileText, Bot } from "lucide-react";
-import { BankStatement, Transaction } from "@/types";
-import { processPDF } from "@/lib/pdfProcessor";
-// Importamos la estrategia de procesamiento por grupos
-import { processWithOpenAIByGroups } from "@/lib/groupProcessingStrategy";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import React, { useState } from 'react';
+import { Button } from "../ui/button";
+import { Progress } from "../ui/progress";
+import { useToast } from "../ui/use-toast";
+import { processWithOpenAIByGroups } from '../../lib/groupProcessingStrategy';
+import { processExcelDirectly } from '../../lib/excelProcessor';
+import { Transaction, BankStatement } from '../../types';
+import { Loader2, Upload, FileText, Bot, AlertCircle, CheckCircle } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
+import { Switch } from "../ui/switch";
+import { Label } from "../ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
+import { Badge } from "../ui/badge";
 
 const FileUpload = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -22,6 +22,7 @@ const FileUpload = () => {
   const [extractedTransactions, setExtractedTransactions] = useState<Transaction[]>([]);
   const [showTransactions, setShowTransactions] = useState(false);
   const [transactionsByPerson, setTransactionsByPerson] = useState<{[key: string]: Transaction[]}>({});
+  const [useDirectProcessor, setUseDirectProcessor] = useState(true); // Por defecto usar el procesador directo
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,14 +47,16 @@ const FileUpload = () => {
   };
 
   /**
-   * Función para procesar el PDF con OpenAI y guardar las transacciones
+   * Función para procesar el archivo (PDF o Excel) y guardar las transacciones
    */
   const handleProcessAndSave = async () => {
-    if (!file || file.type !== 'application/pdf') {
+    // Validar que el archivo sea PDF o Excel
+    const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
+    if (!file || !validTypes.includes(file.type)) {
       toast({
         variant: "destructive",
         title: "Tipo de archivo incorrecto",
-        description: "Por favor, selecciona un archivo PDF",
+        description: "Por favor, selecciona un archivo PDF o Excel (.xlsx, .xls)",
       });
       return;
     }
@@ -65,34 +68,46 @@ const FileUpload = () => {
       setTransactionsByPerson({});
       setShowTransactions(false);
       
-      // Verificar si tenemos las credenciales configuradas
-      const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-      if (!apiKey) {
+      // Determinar si es un archivo Excel
+      const isExcel = file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+                      file.type === 'application/vnd.ms-excel';
+      
+      let transactions: Transaction[] = [];
+      
+      // Si es Excel y se seleccionó el procesador directo, usar processExcelDirectly
+      if (isExcel && useDirectProcessor) {
         toast({
-          variant: "default",
-          title: "API key no configurada",
-          description: "No se ha configurado la API key de OpenAI. Se usarán datos simulados.",
+          title: "Procesando archivo Excel",
+          description: "Usando procesador directo para extraer transacciones...",
         });
+        
+        transactions = await processExcelDirectly(file);
+      } else {
+        // Verificar si tenemos las credenciales configuradas para OpenAI
+        const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+        if (!apiKey) {
+          toast({
+            variant: "default",
+            title: "API key no configurada",
+            description: "No se ha configurado la API key de OpenAI. Se usarán datos simulados.",
+          });
+        }
+        
+        // Usar OpenAI para procesar el archivo
+        toast({
+          title: "Procesando extracto bancario",
+          description: "Enviando archivo a OpenAI para análisis...",
+        });
+        
+        // Usar la estrategia de procesamiento por grupos
+        toast({
+          title: "Usando estrategia de grupos",
+          description: "Procesando por grupos de comerciales para mejorar la precisión...",
+        });
+        
+        // Procesar con la estrategia de grupos que divide los comerciales en 4 grupos
+        transactions = await processWithOpenAIByGroups(file);
       }
-      
-      // Paso 2: Enviar a OpenAI para análisis
-      toast({
-        title: "Procesando extracto bancario",
-        description: "Enviando PDF a OpenAI para análisis...",
-      });
-      
-      // Usar la estrategia de procesamiento por grupos
-      toast({
-        title: "Usando estrategia de grupos",
-        description: "Procesando PDF por grupos de comerciales para mejorar la precisión...",
-      });
-      
-      // Procesar el PDF con la estrategia de grupos que divide los comerciales en 4 grupos
-      // Grupo 1: Allia Klipp (5456), Danielle Bury (0166), Denise Urbach (1463), Erica Chaparro (3841)
-      // Grupo 2: Fabio Novick (2469), Gail Moore (2543), Ivana Novick (2451), Josue Garcia (2153)
-      // Grupo 3: Landon Hamel (0082), Meredith Wellen (7181), Nancy Colon (9923), Sharon Pinto (2535)
-      // Grupo 4: Suzanne Strazzeri (0983), Tara Sarris (8012), Timothy Hawver Scott (4641)
-      const transactions = await processWithOpenAIByGroups(file);
       
       // Paso 3: Organizar transacciones por comercial
       const byPerson: {[key: string]: Transaction[]} = {};
@@ -124,7 +139,7 @@ const FileUpload = () => {
         }
         
         // Importar la función uploadBankStatementToSupabase
-        const { uploadBankStatementToSupabase } = await import('@/lib/bankStatementService');
+        const { uploadBankStatementToSupabase } = await import('../../lib/bankStatementService');
         
         // Verificar si tenemos las credenciales de Supabase configuradas
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -133,7 +148,7 @@ const FileUpload = () => {
         if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('tu_url_de_supabase_aqui')) {
           // Si no hay credenciales válidas, usar mockData como fallback
           console.log('No se encontraron credenciales válidas de Supabase, usando mockData como fallback');
-          const { uploadBankStatement } = await import('@/lib/mockData');
+          const { uploadBankStatement } = await import('../../lib/mockData');
           const newBankStatement = await uploadBankStatement(file, transactions);
           setProcessingResult(newBankStatement);
         } else {
@@ -170,13 +185,13 @@ const FileUpload = () => {
       }
       
     } catch (error) {
-      console.error('Error al procesar el PDF con OpenAI:', error);
+      console.error('Error al procesar el archivo:', error);
       
       // Mensaje de error personalizado según el tipo de error
       toast({
         variant: "destructive",
         title: "Error al procesar el extracto",
-        description: `No se pudo procesar el extracto bancario con OpenAI: ${(error as Error).message}`,
+        description: `No se pudo procesar el extracto bancario: ${(error as Error).message}`,
       });
     } finally {
       setIsProcessing(false);
@@ -186,9 +201,9 @@ const FileUpload = () => {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Subir Extracto Bancario</CardTitle>
+        <CardTitle className="text-xl font-bold">Subir Extracto Bancario (PDF o Excel)</CardTitle>
         <CardDescription>
-          Sube un extracto bancario en formato PDF para procesar las transacciones
+          Sube un extracto bancario en formato PDF o Excel (.xlsx, .xls) para procesar las transacciones
         </CardDescription>
       </CardHeader>
       
@@ -204,12 +219,25 @@ const FileUpload = () => {
               <Upload className="h-8 w-8 text-muted-foreground" />
               <h3 className="font-medium text-lg">Arrastra o haz clic para subir</h3>
               <p className="text-sm text-muted-foreground">
-                Soporta archivos PDF
+                Soporta archivos PDF y Excel (.xlsx, .xls)
               </p>
+              
+              {/* Opción para elegir el procesador */}
+              <div className="flex items-center space-x-2 mt-4 p-2 bg-gray-100 rounded-md">
+                <Switch
+                  id="processor-mode"
+                  checked={useDirectProcessor}
+                  onCheckedChange={setUseDirectProcessor}
+                />
+                <Label htmlFor="processor-mode" className="text-sm">
+                  {useDirectProcessor ? "Usar procesador directo (sin OpenAI)" : "Usar OpenAI"}
+                </Label>
+              </div>
+              
               <input
                 id="file-upload"
                 type="file"
-                accept=".pdf"
+                accept=".pdf,.xlsx,.xls"
                 className="hidden"
                 onChange={handleFileChange}
               />
@@ -219,7 +247,7 @@ const FileUpload = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <FileType className="h-8 w-8 text-primary" />
+                <FileText className="h-8 w-8 text-primary" />
                 <div>
                   <p className="font-medium">{file.name}</p>
                   <p className="text-sm text-muted-foreground">
@@ -243,6 +271,18 @@ const FileUpload = () => {
                 <AlertCircle className="h-4 w-4" />
                 <span className="sr-only">Cancelar</span>
               </Button>
+            </div>
+            
+            {/* Opción para elegir el procesador */}
+            <div className="flex items-center space-x-2 p-2 bg-gray-100 rounded-md">
+              <Switch
+                id="processor-mode-selected"
+                checked={useDirectProcessor}
+                onCheckedChange={setUseDirectProcessor}
+              />
+              <Label htmlFor="processor-mode-selected" className="text-sm">
+                {useDirectProcessor ? "Usar procesador directo (sin OpenAI)" : "Usar OpenAI"}
+              </Label>
             </div>
             
             {isUploading && (
@@ -295,7 +335,7 @@ const FileUpload = () => {
                             {transactions.map((transaction) => (
                               <TableRow key={transaction.id}>
                                 <TableCell>
-                                  {new Date(transaction.date).toLocaleDateString()}
+                                  {transaction.date}
                                 </TableCell>
                                 <TableCell>
                                   <Badge variant="outline" className="font-mono">*{transaction.account}</Badge>
@@ -329,7 +369,7 @@ const FileUpload = () => {
                       {extractedTransactions.map((transaction) => (
                         <TableRow key={transaction.id}>
                           <TableCell>
-                            {new Date(transaction.date).toLocaleDateString()}
+                            {transaction.date}
                           </TableCell>
                           <TableCell className="font-medium">{transaction.merchant}</TableCell>
                           <TableCell className={`text-right font-mono ${transaction.amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
@@ -353,13 +393,13 @@ const FileUpload = () => {
         {file && (
           <Button
             onClick={handleProcessAndSave}
-            disabled={!file || isUploading || isProcessing || file?.type !== 'application/pdf'}
+            disabled={!file || isUploading || isProcessing || !['application/pdf', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'].includes(file?.type || '')}
             className="flex items-center gap-2 w-full max-w-md"
             size="lg"
           >
             {isProcessing ? (
               <>
-                <span className="animate-spin mr-2">⏳</span>
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                 Procesando extracto...
               </>
             ) : isUploading ? (
