@@ -14,6 +14,7 @@ interface CommercialUser {
   id: string;
   email: string;
   name: string;
+  role: string;
   created_at: string;
 }
 
@@ -28,26 +29,51 @@ const CommercialUserManager: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [showForm, setShowForm] = useState(false);
 
-  // Cargar usuarios comerciales
+  // Cargar usuarios comerciales usando la API serverless
   const loadUsers = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('role', 'commercial');
-
-      if (error) throw error;
-      setUsers(data || []);
+      // Llamar a la API serverless para listar usuarios comerciales
+      const response = await fetch('/api/list-commercial-users');
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al cargar usuarios');
+      }
+      
+      // Establecer los usuarios comerciales
+      setUsers(data.users || []);
+      
+      // Si no hay usuarios, mostrar un mensaje
+      if (!data.users || data.users.length === 0) {
+        console.log('No se encontraron usuarios comerciales');
+      }
     } catch (error: any) {
       toast.error(`Error al cargar usuarios: ${error.message}`);
       console.error('Error al cargar usuarios:', error);
+      
+      // Plan B: intentar cargar desde la tabla users
+      try {
+        const { data, error: tableError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('role', 'commercial');
+        
+        if (!tableError && data) {
+          setUsers(data);
+        } else {
+          setUsers([]);
+        }
+      } catch (secondError) {
+        console.error('Error en plan B:', secondError);
+        setUsers([]);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Crear un nuevo usuario comercial
+  // Función para crear un nuevo usuario comercial usando la API serverless
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -55,21 +81,50 @@ const CommercialUserManager: React.FC = () => {
       toast.error('Por favor completa todos los campos');
       return;
     }
-
+    
     setCreating(true);
+    
     try {
-      const { user, password } = await createCommercialUser(
-        newUser.email,
-        newUser.name
-      );
+      // Llamar a la API serverless en lugar de la función directa
+      const response = await fetch('/api/create-commercial-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: newUser.email,
+          name: newUser.name,
+        }),
+      });
       
-      setNewPassword(password);
-      toast.success(`Usuario creado con éxito: ${newUser.email}`);
-      loadUsers();
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al crear usuario');
+      }
+      
+      // Actualizar la lista de usuarios
+      setUsers([...users, {
+        id: data.user.id,
+        email: newUser.email,
+        name: newUser.name,
+        role: 'commercial',
+        created_at: new Date().toISOString(),
+      }]);
+      
+      // Limpiar el formulario
       setNewUser({ email: '', name: '' });
+      
+      toast.success(`Usuario comercial creado: ${newUser.email}`);
+      
+      // Guardar la contraseña para mostrarla
+      setNewPassword(data.password);
+      
+      // Recargar la lista de usuarios
+      loadUsers();
     } catch (error: any) {
-      toast.error(`Error al crear usuario: ${error.message}`);
       console.error('Error al crear usuario:', error);
+      toast.error(`Error al crear usuario: ${error.message}`);
     } finally {
       setCreating(false);
     }
