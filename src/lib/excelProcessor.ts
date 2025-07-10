@@ -1,5 +1,13 @@
-// Importamos xlsx de manera compatible con ESM
-import * as XLSX from 'xlsx/xlsx.mjs'
+// Usamos la variable global XLSX cargada desde el CDN
+// Declaramos el tipo para TypeScript
+declare global {
+  interface Window {
+    XLSX: any;
+  }
+}
+
+// Referencia a la variable global
+const XLSX = window.XLSX;
 import { v4 as uuidv4 } from 'uuid';
 import { Transaction } from '../types';
 

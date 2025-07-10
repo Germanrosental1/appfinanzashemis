@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    include: ['xlsx']
+    exclude: ['xlsx']
   },
   // Asegurar que las rutas funcionen correctamente en producción
   base: "/",
@@ -33,7 +33,6 @@ export default defineConfig(({ mode }) => ({
     },
     // Optimizaciones para SPA en Vercel
     rollupOptions: {
-      external: ['xlsx'],
       output: {
         manualChunks: undefined,
       },
