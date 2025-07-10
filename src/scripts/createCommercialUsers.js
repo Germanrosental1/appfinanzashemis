@@ -36,23 +36,15 @@ export const createCommercialUser = async (email, name, initialPassword = null) 
       throw new Error('No se pudo crear el usuario en Auth');
     }
     
-    // Crear registro en la tabla users
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .insert([{
-        id: authUser.user.id,
-        email: email,
-        name: name,
-        role: 'commercial',
-        created_at: new Date().toISOString(),
-      }])
-      .select()
-      .single();
-    
-    if (userError) {
-      console.error('Error al crear usuario en la tabla users:', userError);
-      throw userError;
-    }
+    // Ya no intentamos insertar en la tabla users, usamos solo la autenticación
+    // Construimos un objeto de usuario con la información disponible
+    const userData = {
+      id: authUser.user.id,
+      email: email,
+      name: name,
+      role: 'commercial',
+      created_at: new Date().toISOString(),
+    };
     
     console.log(`Usuario comercial creado con éxito: ${email}`);
     return { user: userData, password };
