@@ -1,5 +1,5 @@
-// No importamos xlsx directamente para evitar problemas con Vite/Rollup en Vercel
-// Lo importaremos dinámicamente cuando sea necesario
+// Importamos xlsx de manera compatible con ESM
+import * as XLSX from 'xlsx/xlsx.mjs'
 import { v4 as uuidv4 } from 'uuid';
 import { Transaction } from '../types';
 
@@ -186,9 +186,6 @@ export const processExcelDirectly = async (file: File): Promise<Transaction[]> =
     
     // Convertir el archivo a ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
-    
-    // Importar xlsx dinámicamente para evitar problemas con Vite/Rollup en Vercel
-    const XLSX = await import('xlsx');
     
     // Leer el archivo Excel con opciones para preservar fechas
     const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });

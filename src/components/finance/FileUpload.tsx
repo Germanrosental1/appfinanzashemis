@@ -3,7 +3,7 @@ import { Button } from "../ui/button";
 import { Progress } from "../ui/progress";
 import { useToast } from "../ui/use-toast";
 import { processWithOpenAIByGroups } from '../../lib/groupProcessingStrategy';
-import { processExcelWithoutLibrary } from '../../lib/simpleExcelProcessor';
+import { processExcelDirectly } from '../../lib/excelProcessor';
 import { Transaction, BankStatement } from '../../types';
 import { Loader2, Upload, FileText, Bot, AlertCircle, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
@@ -74,14 +74,14 @@ const FileUpload = () => {
       
       let transactions: Transaction[] = [];
       
-      // Si es Excel y se seleccionó el procesador directo, usar processExcelWithoutLibrary
+      // Si es Excel y se seleccionó el procesador directo, usar processExcelDirectly
       if (isExcel && useDirectProcessor) {
         toast({
           title: "Procesando archivo Excel",
           description: "Usando procesador directo para extraer transacciones...",
         });
         
-        transactions = await processExcelWithoutLibrary(file);
+        transactions = await processExcelDirectly(file);
       } else {
         // Verificar si tenemos las credenciales configuradas para OpenAI
         const apiKey = import.meta.env.VITE_OPENAI_API_KEY;

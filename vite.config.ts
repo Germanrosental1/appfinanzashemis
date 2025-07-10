@@ -28,7 +28,8 @@ export default defineConfig(({ mode }) => ({
     outDir: "dist",
     assetsDir: "assets",
     commonjsOptions: {
-      include: [/xlsx/, /node_modules/],
+      include: [/node_modules/],
+      transformMixedEsModules: true
     },
     // Optimizaciones para SPA en Vercel
     rollupOptions: {
