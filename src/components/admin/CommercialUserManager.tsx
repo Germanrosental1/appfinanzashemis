@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { associateCommercialToTransactions } from '../../lib/commercialService';
 import { createCommercialUser } from '@/scripts/createCommercialUsers';
 import { toast } from 'react-hot-toast';
 // Usando los componentes UI que ya existen en el proyecto
@@ -111,6 +112,17 @@ const CommercialUserManager: React.FC = () => {
         role: 'commercial',
         created_at: new Date().toISOString(),
       }]);
+      
+      // Intentar asociar transacciones pendientes a este usuario comercial
+      try {
+        const transactionsUpdated = await associateCommercialToTransactions(data.user.id, newUser.name);
+        if (transactionsUpdated > 0) {
+          toast.success(`Se asociaron ${transactionsUpdated} transacciones pendientes al usuario`);
+        }
+      } catch (associateError) {
+        console.error('Error al asociar transacciones:', associateError);
+        // No mostramos error al usuario para no confundirlo
+      }
       
       // Limpiar el formulario
       setNewUser({ email: '', name: '' });

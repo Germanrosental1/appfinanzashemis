@@ -339,6 +339,85 @@ export const getCommercialsWithTransactionsInStatement = async (statementId: str
  * @param statement Extracto bancario
  * @returns Resultado de la operación con contadores
  */
+/**
+ * Asocia un usuario comercial a todas las transacciones pendientes que coincidan con su nombre
+ * @param userId ID del usuario comercial
+ * @param userName Nombre del usuario comercial
+ * @returns Número de transacciones actualizadas
+ */
+export const associateCommercialToTransactions = async (userId: string, userName: string): Promise<number> => {
+  try {
+    // Normalizar el nombre para la búsqueda
+    const normalizedName = userName.toLowerCase();
+    
+    // Obtener todas las transacciones pendientes
+    const { data: pendingTransactions, error: transactionsError } = await supabase
+      .from('transactions')
+      .select('id, assigned_to')
+      .eq('status', 'pending')
+      .not('assigned_to', 'is', null);
+    
+    if (transactionsError) {
+      console.error('Error al obtener transacciones pendientes:', transactionsError);
+      throw transactionsError;
+    }
+    
+    if (!pendingTransactions || pendingTransactions.length === 0) {
+      return 0;
+    }
+    
+    // Filtrar transacciones que coincidan con el nombre del comercial
+    // Usando diferentes formas de normalización para aumentar las coincidencias
+    const matchingTransactions = pendingTransactions.filter(t => {
+      if (!t.assigned_to) return false;
+      
+      const transactionName = t.assigned_to.toLowerCase();
+      
+      // Verificar coincidencia exacta
+      if (transactionName === normalizedName) return true;
+      
+      // Verificar coincidencia sin espacios
+      if (transactionName.replace(/\s+/g, '') === normalizedName.replace(/\s+/g, '')) return true;
+      
+      // Verificar si el nombre de la transacción contiene el nombre del usuario
+      if (transactionName.includes(normalizedName)) return true;
+      
+      // Verificar si el nombre del usuario contiene el nombre de la transacción
+      if (normalizedName.includes(transactionName)) return true;
+      
+      // Para nombres compuestos, verificar coincidencia con la primera parte
+      if (normalizedName.includes(' ')) {
+        const firstName = normalizedName.split(' ')[0];
+        if (transactionName.includes(firstName)) return true;
+      }
+      
+      return false;
+    });
+    
+    if (matchingTransactions.length === 0) {
+      return 0;
+    }
+    
+    // Actualizar las transacciones coincidentes
+    const transactionIds = matchingTransactions.map(t => t.id);
+    
+    const { error: updateError } = await supabase
+      .from('transactions')
+      .update({ commercial: userId })
+      .in('id', transactionIds);
+    
+    if (updateError) {
+      console.error('Error al actualizar transacciones:', updateError);
+      throw updateError;
+    }
+    
+    return matchingTransactions.length;
+  } catch (error) {
+    console.error('Error al asociar comercial a transacciones:', error);
+    throw error;
+  }
+};
+
 export const notifyAllCommercials = async (statement: BankStatement): Promise<{
   total: number;
   success: number;
@@ -373,15 +452,34 @@ export const notifyAllCommercials = async (statement: BankStatement): Promise<{
   const commercialUserMap = new Map();
   authUsers?.forEach(user => {
     if (user.name) {
+      // Guardar el usuario tanto por nombre exacto como por nombre normalizado (sin espacios, en minúsculas)
       commercialUserMap.set(user.name.toLowerCase(), user);
+      commercialUserMap.set(user.name.toLowerCase().replace(/\s+/g, ''), user);
     }
   });
   
   // Enviar notificaciones para cada comercial
   await Promise.all(commercials.map(async (commercial) => {
     try {
-      // Buscar si existe un usuario para este comercial
-      const commercialUser = commercialUserMap.get(commercial.name.toLowerCase());
+      // Buscar si existe un usuario para este comercial (intentando varias formas de normalización)
+      let commercialUser = commercialUserMap.get(commercial.name.toLowerCase());
+      
+      // Si no se encuentra, intentar sin espacios
+      if (!commercialUser) {
+        commercialUser = commercialUserMap.get(commercial.name.toLowerCase().replace(/\s+/g, ''));
+      }
+      
+      // Si aún no se encuentra, intentar con la primera parte del nombre (para nombres compuestos)
+      if (!commercialUser && commercial.name.includes(' ')) {
+        const firstName = commercial.name.split(' ')[0].toLowerCase();
+        // Buscar usuarios que contengan este nombre
+        for (const [key, user] of commercialUserMap.entries()) {
+          if (key.includes(firstName)) {
+            commercialUser = user;
+            break;
+          }
+        }
+      }
       
       if (!commercialUser) {
         console.warn(`No se encontró usuario para el comercial ${commercial.name}`);
