@@ -476,9 +476,18 @@ export const insertTransactions = async (transactions: Omit<SupabaseTransaction,
  * @returns Promesa que resuelve a la transacción actualizada
  */
 export const updateTransaction = async (id: string, updates: Partial<SupabaseTransaction>): Promise<SupabaseTransaction> => {
+  // Si se actualiza el campo assigned_to, sincronizamos también el campo commercial
+  const updatesToApply = { ...updates };
+  
+  if (updates.assigned_to) {
+    updatesToApply.commercial = updates.assigned_to;
+  } else if (updates.commercial) {
+    updatesToApply.assigned_to = updates.commercial;
+  }
+  
   const { data, error } = await supabase
     .from('transactions')
-    .update(updates)
+    .update(updatesToApply)
     .eq('id', id)
     .select()
     .single();
@@ -514,9 +523,23 @@ export const deleteTransaction = async (id: string): Promise<void> => {
  * @returns Promesa que resuelve a la transacción creada
  */
 export const createTransaction = async (transaction: Omit<SupabaseTransaction, 'id' | 'created_at'>): Promise<SupabaseTransaction> => {
+  // Sincronizar los campos assigned_to y commercial
+  const transactionToCreate = { ...transaction };
+  
+  if (transaction.assigned_to && !transaction.commercial) {
+    transactionToCreate.commercial = transaction.assigned_to;
+  } else if (transaction.commercial && !transaction.assigned_to) {
+    transactionToCreate.assigned_to = transaction.commercial;
+  }
+  
+  // Asegurar que el status sea 'pending' por defecto si no se especifica
+  if (!transactionToCreate.status) {
+    transactionToCreate.status = 'pending';
+  }
+  
   const { data, error } = await supabase
     .from('transactions')
-    .insert([transaction])
+    .insert([transactionToCreate])
     .select()
     .single();
   
@@ -615,15 +638,16 @@ export const validateCommercialAccessToken = async (token: string): Promise<stri
 };
 
 /**
- * Obtiene las transacciones asignadas a un comercial específico
+ * Obtiene las transacciones pendientes asignadas a un comercial específico
  * @param commercialName Nombre del comercial
- * @returns Promesa que resuelve a un array de transacciones con comentarios limpios
+ * @returns Promesa que resuelve a un array de transacciones pendientes con comentarios limpios
  */
 export const getTransactionsByCommercial = async (commercialName: string): Promise<SupabaseTransaction[]> => {
   const { data, error } = await supabase
     .from('transactions')
     .select('*')
-    .eq('assigned_to', commercialName)
+    .or(`assigned_to.eq.${commercialName},commercial.eq.${commercialName}`)
+    .eq('status', 'pending') // Solo transacciones pendientes
     .order('date', { ascending: true });
   
   if (error) {

@@ -3,12 +3,12 @@ import { supabase } from '@/lib/supabaseClient';
 import { createCommercialUser } from '@/scripts/createCommercialUsers';
 import { toast } from 'react-hot-toast';
 // Usando los componentes UI que ya existen en el proyecto
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Plus, RefreshCw, Send, Trash } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Loader2, Plus, RefreshCw, Send, Trash, Key } from "lucide-react";
 
 interface CommercialUser {
   id: string;
@@ -160,6 +160,51 @@ const CommercialUserManager: React.FC = () => {
       console.error('Error al eliminar usuario:', error);
     }
   };
+  
+  // Restablecer contraseña de un usuario comercial
+  const handleResetPassword = async (userId: string, email: string) => {
+    // Generar una contraseña aleatoria de 10 caracteres
+    const generatePassword = () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let password = '';
+      for (let i = 0; i < 10; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return password;
+    };
+    
+    const newPassword = generatePassword();
+    
+    try {
+      // Llamar a la API serverless para restablecer la contraseña
+      const response = await fetch('/api/reset-commercial-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          newPassword,
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al restablecer contraseña');
+      }
+      
+      // Mostrar la nueva contraseña
+      setNewPassword(newPassword);
+      toast.success(`Contraseña restablecida para ${email}`);
+      
+      // Mostrar el formulario con la nueva contraseña
+      setShowForm(true);
+    } catch (error: any) {
+      toast.error(`Error al restablecer contraseña: ${error.message}`);
+      console.error('Error al restablecer contraseña:', error);
+    }
+  };
 
   // Enviar email con credenciales
   const sendCredentialsByEmail = async (email: string, password: string) => {
@@ -283,13 +328,24 @@ const CommercialUserManager: React.FC = () => {
                         {new Date(user.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteUser(user.id, user.email)}
-                        >
-                          <Trash className="h-4 w-4 text-red-500" />
-                        </Button>
+                        <div className="flex justify-end space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleResetPassword(user.id, user.email)}
+                            title="Restablecer contraseña"
+                          >
+                            <Key className="h-4 w-4 text-blue-500" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteUser(user.id, user.email)}
+                            title="Eliminar usuario"
+                          >
+                            <Trash className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

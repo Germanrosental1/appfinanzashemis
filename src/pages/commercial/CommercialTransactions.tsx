@@ -26,12 +26,13 @@ const CommercialTransactions = () => {
     try {
       setLoading(true);
       
-      // Obtener transacciones asignadas al comercial por su nombre
-      // Ahora buscamos tanto en assigned_to como en el nuevo campo commercial
+      // Obtener transacciones pendientes asignadas al comercial por su nombre
+      // Buscamos tanto en assigned_to como en el campo commercial y filtramos por status=pending
       const { data, error } = await supabase
         .from('transactions')
         .select('*')
         .or(`assigned_to.eq.${user.name},commercial.eq.${user.name}`)
+        .eq('status', 'pending') // Solo transacciones pendientes
         .order('date', { ascending: false });
         
       console.log('Buscando transacciones para comercial:', user.name);
@@ -121,7 +122,7 @@ const CommercialTransactions = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle>Mis Transacciones Pendientes</CardTitle>
+            <CardTitle>Mis Transacciones Pendientes de Clasificar</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <ClassificationProgress stats={stats} />
@@ -133,7 +134,7 @@ const CommercialTransactions = () => {
               />
             ) : (
               <div className="text-center py-8">
-                <p className="text-gray-500">No hay transacciones disponibles para este período.</p>
+                <p className="text-gray-500">No hay transacciones pendientes de clasificar asignadas a su cuenta.</p>
                 <p className="text-gray-500 mt-2">Si cree que esto es un error, contacte con el departamento financiero.</p>
               </div>
             )}

@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient';
 import { Commercial, CommercialAccessToken, CommercialNotification } from '@/types/commercial';
 import { BankStatement } from '@/types';
-import emailjs from '@emailjs/browser';
+import { sendCommercialAccessToken } from './emailService';
 
 /**
  * Obtiene todos los comerciales registrados
@@ -127,83 +127,30 @@ export const updateCommercialEmail = async (
 };
 
 /**
- * Genera un token de acceso para un comercial asociado a un extracto bancario específico
- * @param commercialEmail Email del comercial
- * @param commercialName Nombre del comercial
- * @param statementId ID del extracto bancario
- * @param expiryDays Días hasta la expiración del token
- * @returns Token generado
- */
-export const generateCommercialTokenForStatement = async (
-  commercialEmail: string,
-  commercialName: string,
-  statementId: string,
-  expiryDays = 7
-): Promise<CommercialAccessToken> => {
-  // Generar token único
-  const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  
-  // Calcular fecha de expiración
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + expiryDays);
-  
-  // Crear objeto de token
-  const newToken = {
-    token,
-    commercial_name: commercialName,
-    commercial_email: commercialEmail,
-    statement_id: statementId,
-    expires_at: expiresAt.toISOString(),
-    used: false
-  };
-  
-  // Guardar el token en la base de datos
-  const { data, error } = await supabase
-    .from('commercial_access_tokens')
-    .insert([newToken])
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error al generar token de acceso para comercial:', error);
-    throw error;
-  }
-  
-  return data;
-};
-
-/**
  * Envía un email con el token de acceso a un comercial
  * @param email Email del comercial
  * @param name Nombre del comercial
  * @param token Token de acceso
- * @param statementPeriod Período del extracto bancario
+ * @param period Período del extracto bancario
  * @returns Resultado del envío
  */
 export const sendTokenEmail = async (
   email: string,
   name: string,
   token: string,
-  statementPeriod: string
+  period: string
 ): Promise<boolean> => {
   try {
-    // Construir la URL de acceso
+    // Construir URL con el token
     const baseUrl = window.location.origin;
-    const accessUrl = `${baseUrl}/token-login?token=${token}`;
+    const tokenUrl = `${baseUrl}/token-login?token=${token}`;
     
-    // Enviar el email usando EmailJS
-    const result = await emailjs.send(
-      import.meta.env.VITE_EMAILJS_SERVICE_ID,
-      import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
-      {
-        to_email: email,
-        to_name: name,
-        subject: `Acceso a extracto bancario - ${statementPeriod}`,
-        message: `Hola ${name}, se te ha concedido acceso al extracto bancario del período ${statementPeriod}. 
-                  Haz clic en el siguiente enlace para acceder: ${accessUrl}`,
-        access_link: accessUrl
-      },
-      import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+    // Enviar email
+    const result = await sendCommercialAccessToken(
+      email,
+      name,
+      tokenUrl,
+      period
     );
     
     return result.status === 200;
@@ -214,28 +161,65 @@ export const sendTokenEmail = async (
 };
 
 /**
+ * Envía una notificación por email a un comercial (sin token)
+ * @param email Email del comercial
+ * @param name Nombre del comercial
+ * @param period Período del extracto
+ * @returns Resultado de la operación
+ */
+export const sendCommercialNotification = async (
+  email: string,
+  name: string,
+  period: string
+): Promise<{status: number, text: string}> => {
+  try {
+    // Construir URL directa a la plataforma
+    const baseUrl = window.location.origin;
+    const appUrl = `${baseUrl}/commercial/transactions`;
+    
+    // Enviar email con enlace directo a la plataforma
+    const result = await sendCommercialAccessToken(
+      email,
+      name,
+      appUrl,
+      period,
+      true // Indicar que es una notificación sin token
+    );
+    
+    return result;
+  } catch (error) {
+    console.error('Error al enviar notificación:', error);
+    throw error;
+  }
+};
+
+/**
  * Registra una notificación enviada a un comercial
  * @param commercialId ID del comercial
  * @param statementId ID del extracto bancario
- * @param tokenId ID del token generado
+ * @param tokenId ID del token generado o null si no hay token
  * @param success Indica si el envío fue exitoso
  * @param errorMessage Mensaje de error en caso de fallo
  */
 export const registerNotification = async (
   commercialId: string,
   statementId: string,
-  tokenId: string,
+  tokenId: string | null,
   success: boolean,
   errorMessage?: string
 ): Promise<void> => {
-  const notification = {
+  const notification: any = {
     commercial_id: commercialId,
     statement_id: statementId,
-    token_id: tokenId,
     sent_at: new Date().toISOString(),
     status: success, // Usar directamente el valor booleano
     error_message: errorMessage
   };
+  
+  // Solo incluir token_id si es un UUID válido
+  if (tokenId && tokenId !== '0') {
+    notification.token_id = tokenId;
+  }
   
   try {
     const { error } = await supabase
@@ -370,30 +354,64 @@ export const notifyAllCommercials = async (statement: BankStatement): Promise<{
   let successCount = 0;
   let failedCount = 0;
   
-  // Generar tokens y enviar notificaciones para cada comercial
+  // Buscar usuarios comerciales en la autenticación de Supabase
+  const { data: authUsers, error: authError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('role', 'commercial');
+  
+  if (authError) {
+    console.error('Error al obtener usuarios comerciales:', authError);
+    return { 
+      total: commercials.length, 
+      success: 0, 
+      failed: commercials.length 
+    };
+  }
+  
+  // Crear un mapa de nombres de comerciales a usuarios
+  const commercialUserMap = new Map();
+  authUsers?.forEach(user => {
+    if (user.name) {
+      commercialUserMap.set(user.name.toLowerCase(), user);
+    }
+  });
+  
+  // Enviar notificaciones para cada comercial
   await Promise.all(commercials.map(async (commercial) => {
     try {
-      // Generar token
-      const token = await generateCommercialTokenForStatement(
-        commercial.email,
-        commercial.name,
-        statement.id,
-        7 // 7 días de validez
-      );
+      // Buscar si existe un usuario para este comercial
+      const commercialUser = commercialUserMap.get(commercial.name.toLowerCase());
       
-      // Enviar email
-      const emailSent = await sendTokenEmail(
+      if (!commercialUser) {
+        console.warn(`No se encontró usuario para el comercial ${commercial.name}`);
+        failedCount++;
+        
+        // Registrar notificación fallida
+        await registerNotification(
+          commercial.id,
+          statement.id,
+          null,
+          false,
+          `No existe usuario para el comercial ${commercial.name}`
+        );
+        return;
+      }
+      
+      // Enviar email de notificación (sin token, solo con enlace a la plataforma)
+      const emailResult = await sendCommercialNotification(
         commercial.email,
         commercial.name,
-        token.token,
         statement.period
       );
+      
+      const emailSent = emailResult.status === 200;
       
       // Registrar notificación
       await registerNotification(
         commercial.id,
         statement.id,
-        token.id,
+        null, // Ya no usamos tokens
         emailSent,
         emailSent ? undefined : 'Error al enviar email'
       );
@@ -412,7 +430,7 @@ export const notifyAllCommercials = async (statement: BankStatement): Promise<{
         await registerNotification(
           commercial.id,
           statement.id,
-          '0', // ID inválido para indicar que no se generó token
+          null,
           false,
           error instanceof Error ? error.message : 'Error desconocido'
         );
