@@ -1,13 +1,24 @@
-// API para crear usuarios comerciales usando la clave de servicio de Supabase
+// API para crear usuarios comerciales
 import { createClient } from '@supabase/supabase-js';
 
-// Inicializar cliente de Supabase con la clave de servicio
-const supabaseAdmin = createClient(
+// Inicializar cliente de Supabase con la clave anónima
+// Usamos la clave anónima porque estamos usando signUp que funciona con permisos normales
+const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY // Esta es la clave de servicio, no la anónima
+  process.env.VITE_SUPABASE_ANON_KEY
 );
 
 export default async function handler(req, res) {
+  // Configurar CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Manejar preflight OPTIONS request
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
   // Solo permitir método POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' });
@@ -24,14 +35,15 @@ export default async function handler(req, res) {
     // Generar contraseña aleatoria si no se proporciona
     const userPassword = password || generateRandomPassword();
 
-    // Crear usuario en Supabase Auth con la clave de servicio
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    // Crear usuario en Supabase Auth usando signUp en lugar de admin.createUser
+    const { data: authUser, error: authError } = await supabase.auth.signUp({
       email,
       password: userPassword,
-      email_confirm: true,
-      user_metadata: {
-        name,
-        role: 'commercial',
+      options: {
+        data: {
+          name,
+          role: 'commercial',
+        }
       }
     });
 
@@ -39,36 +51,30 @@ export default async function handler(req, res) {
       console.error('Error al crear usuario en Auth:', authError);
       return res.status(400).json({ error: authError.message });
     }
-
-    // Crear registro en la tabla users si es necesario
-    const { error: userError } = await supabaseAdmin
-      .from('users')
-      .insert([{
-        id: authUser.user.id,
-        email: email,
-        name: name,
-        role: 'commercial',
-      }]);
-
-    if (userError) {
-      console.error('Error al crear registro en users:', userError);
-      // No fallamos aquí porque el usuario ya está creado en Auth
+    
+    // Verificar que el usuario se creó correctamente
+    if (!authUser || !authUser.user) {
+      return res.status(500).json({ error: 'No se pudo crear el usuario en Auth' });
     }
+    
+    // Construir un objeto de usuario con la información disponible
+    const userData = {
+      id: authUser.user.id,
+      email: email,
+      name: name,
+      role: 'commercial',
+      created_at: new Date().toISOString(),
+    };
 
     // Devolver éxito
     return res.status(200).json({ 
       success: true, 
-      user: {
-        id: authUser.user.id,
-        email: authUser.user.email,
-        name: name,
-        role: 'commercial'
-      },
+      user: userData,
       password: userPassword
     });
   } catch (error) {
     console.error('Error al crear usuario comercial:', error);
-    return res.status(500).json({ error: 'Error interno del servidor' });
+    return res.status(500).json({ error: error.message || 'Error interno del servidor' });
   }
 }
 
