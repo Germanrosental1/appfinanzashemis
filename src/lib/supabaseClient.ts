@@ -245,6 +245,7 @@ export type SupabaseTransaction = {
   comments?: string;
   created_at?: string;
   commercial?: string; // Nombre del comercial asignado según los últimos 4 dígitos de la tarjeta
+  commercial_id?: string | null; // ID del usuario comercial asignado
   card_number?: string; // Últimos 4 dígitos del número de tarjeta
 };
 

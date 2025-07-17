@@ -23,6 +23,8 @@ export interface Transaction {
   status: "pending" | "classified" | "approved" | "completed";
   assignedTo?: string; // User ID
   commercial?: string; // Nombre del comercial asociado a la tarjeta
+  commercial_id?: string | null; // ID del usuario comercial asignado
+  assigned_to?: string; // Nombre del comercial asignado (para compatibilidad)
   cardNumber?: string; // Últimos 4 dígitos de la tarjeta
 }
 

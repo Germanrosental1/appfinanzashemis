@@ -93,11 +93,12 @@ const convertToSupabaseTransaction = (transaction: Transaction, bankStatementId:
     amount: transaction.amount,
     currency: transaction.currency,
     status: status,
-    assigned_to: transaction.assignedTo || transaction.commercial, // Usar commercial como fallback si assignedTo está vacío
+    assigned_to: transaction.assigned_to || transaction.assignedTo || transaction.commercial, // Usar commercial como fallback si assigned_to está vacío
     category: transaction.category,
     project: transaction.project,
     comments: transaction.comments,
     commercial: transaction.commercial, // Agregar el campo commercial
+    commercial_id: transaction.commercial_id, // Agregar el campo commercial_id
     card_number: transaction.cardNumber // Agregar el campo cardNumber
   };
 };
@@ -165,6 +166,8 @@ const convertToTransaction = (supabaseTransaction: SupabaseTransaction): Transac
     project: supabaseTransaction.project,
     comments: supabaseTransaction.comments,
     commercial: supabaseTransaction.commercial || supabaseTransaction.assigned_to || 'Desconocido', // Usar assigned_to como fallback
+    commercial_id: supabaseTransaction.commercial_id || null, // Incluir el ID del usuario comercial
+    assigned_to: supabaseTransaction.assigned_to, // Incluir assigned_to para compatibilidad
     cardNumber: supabaseTransaction.card_number || (supabaseTransaction.account ? supabaseTransaction.account.match(/\d{4}$/)?.[0] : undefined) // Extraer últimos 4 dígitos si no existe
   };
 };

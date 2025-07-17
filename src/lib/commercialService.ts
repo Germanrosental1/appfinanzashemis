@@ -345,6 +345,176 @@ export const getCommercialsWithTransactionsInStatement = async (statementId: str
  * @param userName Nombre del usuario comercial
  * @returns Número de transacciones actualizadas
  */
+/**
+ * Obtiene la lista de usuarios comerciales para mostrar en un desplegable
+ * @returns Lista de usuarios comerciales con su ID y nombre
+ */
+/**
+ * Asigna un usuario comercial a una transacción específica
+ * @param transactionId ID de la transacción
+ * @param userId ID del usuario comercial (null para desasignar)
+ * @param userName Nombre del usuario comercial (null para desasignar)
+ * @returns La transacción actualizada o null si hubo un error
+ */
+export const assignCommercialToTransaction = async (
+  transactionId: string,
+  userId: string | null,
+  userName: string | null
+) => {
+  try {
+    // Actualizar la transacción con el usuario comercial asignado
+    const { data, error } = await supabase
+      .from('transactions')
+      .update({
+        commercial_id: userId,
+        assigned_to: userName
+      })
+      .eq('id', transactionId)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error al asignar usuario comercial a la transacción:', error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error al asignar usuario comercial a la transacción:', error);
+    return null;
+  }
+};
+
+/**
+ * Asigna masivamente un usuario comercial a múltiples transacciones
+ * @param transactionIds Array de IDs de transacciones
+ * @param userId ID del usuario comercial (null para desasignar)
+ * @param userName Nombre del usuario comercial (null para desasignar)
+ * @returns Número de transacciones actualizadas correctamente
+ */
+export const assignCommercialToMultipleTransactions = async (
+  transactionIds: string[],
+  userId: string | null,
+  userName: string | null
+): Promise<number> => {
+  try {
+    // Dividir los IDs en lotes más pequeños para evitar errores 409
+    const batchSize = 20; // Tamaño de lote recomendado
+    let totalUpdated = 0;
+    
+    // Procesar en lotes
+    for (let i = 0; i < transactionIds.length; i += batchSize) {
+      const batch = transactionIds.slice(i, i + batchSize);
+      console.log(`Procesando lote ${i/batchSize + 1} con ${batch.length} transacciones`);
+      
+      const { data, error } = await supabase
+        .from('transactions')
+        .update({
+          commercial_id: userId,
+          assigned_to: userName
+        })
+        .in('id', batch)
+        .select();
+      
+      if (error) {
+        console.error(`Error en lote ${i/batchSize + 1}:`, error);
+        // Continuar con el siguiente lote en lugar de fallar completamente
+        continue;
+      }
+      
+      totalUpdated += data?.length || 0;
+    }
+    
+    return totalUpdated;
+  } catch (error) {
+    console.error('Error al asignar usuario comercial a múltiples transacciones:', error);
+    return 0;
+  }
+};
+
+export const getCommercialUsersForDropdown = async (): Promise<{id: string, name: string}[]> => {
+  try {
+    // En entorno de desarrollo, no intentar usar la API serverless
+    // ya que Vite no la procesa correctamente
+    
+    // Plan A: Consultar directamente la tabla users
+    console.log('Intentando obtener usuarios comerciales de la tabla users...');
+    const { data: usersFromUsersTable, error: usersError } = await supabase
+      .from('users')
+      .select('id, name, email, role')
+      .eq('role', 'commercial')
+      .order('name');
+    
+    if (!usersError && usersFromUsersTable && usersFromUsersTable.length > 0) {
+      console.log(`Encontrados ${usersFromUsersTable.length} usuarios comerciales en la tabla users`);
+      return usersFromUsersTable.map(user => ({
+        id: user.id,
+        name: user.name || user.email?.split('@')[0] || 'Usuario sin nombre'
+      }));
+    } else if (usersError) {
+      console.warn('Error al consultar la tabla users:', usersError);
+    } else {
+      console.warn('No se encontraron usuarios comerciales en la tabla users');
+    }
+    
+    // Plan B: Intentar obtener usuarios con rol comercial de cualquier tabla
+    console.log('Buscando usuarios comerciales en otras tablas...');
+    
+    // Intentar con la tabla auth.users directamente (requiere permisos)
+    try {
+      const { data: authUsers, error: authError } = await supabase
+        .from('auth_users')
+        .select('id, email, raw_user_meta_data')
+        .contains('raw_user_meta_data', {role: 'commercial'})
+        .order('email');
+      
+      if (!authError && authUsers && authUsers.length > 0) {
+        console.log(`Encontrados ${authUsers.length} usuarios comerciales en auth_users`);
+        return authUsers.map(user => ({
+          id: user.id,
+          name: user.raw_user_meta_data?.name || user.email?.split('@')[0] || 'Usuario sin nombre'
+        }));
+      }
+    } catch (authError) {
+      console.warn('Error al consultar auth_users:', authError);
+    }
+    
+    // Último intento: consultar la tabla commercials si existe
+    console.log('Intentando con la tabla commercials...');
+    const { data: commercials, error: commercialsError } = await supabase
+      .from('commercials')
+      .select('id, name, email')
+      .order('name');
+    
+    if (!commercialsError && commercials && commercials.length > 0) {
+      console.log(`Encontrados ${commercials.length} usuarios en la tabla commercials`);
+      return commercials.map(commercial => ({
+        id: commercial.id,
+        name: commercial.name || commercial.email?.split('@')[0] || 'Usuario sin nombre'
+      }));
+    }
+    
+    if (commercialsError) {
+      console.error('Error al obtener comerciales de la tabla commercials:', commercialsError);
+    }
+    
+    // Si todo lo demás falla, crear al menos un usuario de prueba para desarrollo
+    console.log('Creando usuario comercial de prueba para desarrollo');
+    return [{
+      id: '12345678-1234-1234-1234-123456789012',
+      name: 'Usuario Comercial (Prueba)'
+    }];
+    
+  } catch (error) {
+    console.error('Error al obtener usuarios comerciales para el desplegable:', error);
+    // Devolver al menos un usuario de prueba para que la interfaz funcione
+    return [{
+      id: '12345678-1234-1234-1234-123456789012',
+      name: 'Usuario Comercial (Prueba)'
+    }];
+  }
+};
+
 export const associateCommercialToTransactions = async (userId: string, userName: string): Promise<number> => {
   try {
     // Normalizar el nombre para la búsqueda

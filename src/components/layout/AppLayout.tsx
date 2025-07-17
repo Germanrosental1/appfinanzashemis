@@ -73,18 +73,20 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           
           <SidebarContent>
             <SidebarMenu>
-              {/* Dashboard - Visible para todos */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive('/finance/dashboard')}
-                >
-                  <Link to="/finance/dashboard">
-                    <Home className="size-4" />
-                    <span>Dashboard</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {/* Dashboard - Visible solo para admin y finance */}
+              {user?.role !== 'commercial' && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive('/finance/dashboard')}
+                  >
+                    <Link to="/finance/dashboard">
+                      <Home className="size-4" />
+                      <span>Dashboard</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               
 
               

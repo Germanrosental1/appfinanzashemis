@@ -2,12 +2,10 @@ import React, { useState } from 'react';
 import { Button } from "../ui/button";
 import { Progress } from "../ui/progress";
 import { useToast } from "../ui/use-toast";
-import { processWithOpenAIByGroups } from '../../lib/groupProcessingStrategy';
 import { processExcelDirectly } from '../../lib/excelProcessor';
 import { Transaction, BankStatement } from '../../types';
-import { Loader2, Upload, FileText, Bot, AlertCircle, CheckCircle } from 'lucide-react';
+import { Loader2, Upload, FileText, AlertCircle, CheckCircle, FileSpreadsheet, Bot } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
-import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { Badge } from "../ui/badge";
@@ -22,7 +20,6 @@ const FileUpload = () => {
   const [extractedTransactions, setExtractedTransactions] = useState<Transaction[]>([]);
   const [showTransactions, setShowTransactions] = useState(false);
   const [transactionsByPerson, setTransactionsByPerson] = useState<{[key: string]: Transaction[]}>({});
-  const [useDirectProcessor, setUseDirectProcessor] = useState(true); // Por defecto usar el procesador directo
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,39 +71,23 @@ const FileUpload = () => {
       
       let transactions: Transaction[] = [];
       
-      // Si es Excel y se seleccionó el procesador directo, usar processExcelDirectly
-      if (isExcel && useDirectProcessor) {
+      // Siempre usamos el procesador directo para archivos Excel
+      if (isExcel) {
         toast({
           title: "Procesando archivo Excel",
-          description: "Usando procesador directo para extraer transacciones...",
+          description: "Extrayendo transacciones del archivo...",
         });
         
         transactions = await processExcelDirectly(file);
       } else {
-        // Verificar si tenemos las credenciales configuradas para OpenAI
-        const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-        if (!apiKey) {
-          toast({
-            variant: "default",
-            title: "API key no configurada",
-            description: "No se ha configurado la API key de OpenAI. Se usarán datos simulados.",
-          });
-        }
-        
-        // Usar OpenAI para procesar el archivo
+        // Para archivos PDF u otros formatos (en el futuro se podría implementar otro procesador)
         toast({
-          title: "Procesando extracto bancario",
-          description: "Enviando archivo a OpenAI para análisis...",
+          variant: "destructive",
+          title: "Formato no soportado",
+          description: "Actualmente solo se soportan archivos Excel (.xlsx, .xls)",
         });
-        
-        // Usar la estrategia de procesamiento por grupos
-        toast({
-          title: "Usando estrategia de grupos",
-          description: "Procesando por grupos de comerciales para mejorar la precisión...",
-        });
-        
-        // Procesar con la estrategia de grupos que divide los comerciales en 4 grupos
-        transactions = await processWithOpenAIByGroups(file);
+        setIsProcessing(false);
+        return;
       }
       
       // Paso 3: Organizar transacciones por comercial
@@ -231,25 +212,13 @@ const FileUpload = () => {
               <Upload className="h-8 w-8 text-muted-foreground" />
               <h3 className="font-medium text-lg">Arrastra o haz clic para subir</h3>
               <p className="text-sm text-muted-foreground">
-                Soporta archivos PDF y Excel (.xlsx, .xls)
+                Soporta archivos Excel (.xlsx, .xls)
               </p>
-              
-              {/* Opción para elegir el procesador */}
-              <div className="flex items-center space-x-2 mt-4 p-2 bg-gray-100 rounded-md">
-                <Switch
-                  id="processor-mode"
-                  checked={useDirectProcessor}
-                  onCheckedChange={setUseDirectProcessor}
-                />
-                <Label htmlFor="processor-mode" className="text-sm">
-                  {useDirectProcessor ? "Usar procesador directo (sin OpenAI)" : "Usar OpenAI"}
-                </Label>
-              </div>
               
               <input
                 id="file-upload"
                 type="file"
-                accept=".pdf,.xlsx,.xls"
+                accept=".xlsx,.xls"
                 className="hidden"
                 onChange={handleFileChange}
               />
@@ -285,17 +254,7 @@ const FileUpload = () => {
               </Button>
             </div>
             
-            {/* Opción para elegir el procesador */}
-            <div className="flex items-center space-x-2 p-2 bg-gray-100 rounded-md">
-              <Switch
-                id="processor-mode-selected"
-                checked={useDirectProcessor}
-                onCheckedChange={setUseDirectProcessor}
-              />
-              <Label htmlFor="processor-mode-selected" className="text-sm">
-                {useDirectProcessor ? "Usar procesador directo (sin OpenAI)" : "Usar OpenAI"}
-              </Label>
-            </div>
+            {/* Se eliminó la opción de seleccionar procesador */}
             
             {isUploading && (
               <div className="space-y-2">

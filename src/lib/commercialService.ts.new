@@ -1,0 +1,448 @@
+import { supabase } from './supabaseClient';
+import { BankStatement, Transaction } from '@/types';
+import { Commercial, CommercialNotification } from '@/types/commercial';
+import { sendCommercialAccessToken } from './emailService';
+import { generateRandomToken } from './utils';
+import { format } from 'date-fns';
+
+/**
+ * Obtiene todos los comerciales de la base de datos
+ * @returns Lista de comerciales
+ */
+export const getAllCommercials = async (): Promise<Commercial[]> => {
+  const { data, error } = await supabase
+    .from('commercials')
+    .select('*')
+    .order('name');
+  
+  if (error) {
+    console.error('Error al obtener comerciales:', error);
+    throw error;
+  }
+  
+  return data || [];
+};
+
+/**
+ * Actualiza el estado de un comercial
+ * @param commercialId ID del comercial
+ * @param isActive Nuevo estado
+ * @returns Comercial actualizado
+ */
+export const updateCommercialStatus = async (
+  commercialId: string,
+  isActive: boolean
+): Promise<Commercial> => {
+  const { data, error } = await supabase
+    .from('commercials')
+    .update({ is_active: isActive })
+    .eq('id', commercialId)
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error al actualizar estado del comercial:', error);
+    throw error;
+  }
+  
+  return {
+    id: data.id,
+    name: data.name,
+    email: data.email,
+    isActive: data.is_active,
+    createdAt: data.created_at
+  };
+};
+
+/**
+ * Actualiza el email de un comercial
+ * @param commercialId ID del comercial
+ * @param email Nuevo email
+ * @returns Comercial actualizado
+ */
+export const updateCommercialEmail = async (
+  commercialId: string,
+  email: string
+): Promise<Commercial> => {
+  const { data, error } = await supabase
+    .from('commercials')
+    .update({ email })
+    .eq('id', commercialId)
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error al actualizar email del comercial:', error);
+    throw error;
+  }
+  
+  return {
+    id: data.id,
+    name: data.name,
+    email: data.email,
+    isActive: data.is_active,
+    createdAt: data.created_at
+  };
+};
+
+/**
+ * Genera un token de acceso para un comercial
+ * @param commercialEmail Email del comercial
+ * @param commercialName Nombre del comercial
+ * @param statementId ID del extracto bancario
+ * @param validDays Días de validez del token
+ * @returns Token generado
+ */
+export const generateCommercialTokenForStatement = async (
+  commercialEmail: string,
+  commercialName: string,
+  statementId: string,
+  validDays: number = 7
+) => {
+  // Generar token aleatorio
+  const token = generateRandomToken(32);
+  
+  // Calcular fecha de expiración
+  const expiryDate = new Date();
+  expiryDate.setDate(expiryDate.getDate() + validDays);
+  
+  // Guardar token en la base de datos
+  const { data, error } = await supabase
+    .from('commercial_access_tokens')
+    .insert({
+      token,
+      commercial_email: commercialEmail,
+      commercial_name: commercialName,
+      statement_id: statementId,
+      expires_at: expiryDate.toISOString(),
+      is_used: false
+    })
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error al generar token para comercial:', error);
+    throw error;
+  }
+  
+  return data;
+};
+
+/**
+ * Valida un token de acceso para comerciales
+ * @param token Token a validar
+ * @returns Nombre del comercial si el token es válido, null en caso contrario
+ */
+export const validateCommercialAccessToken = async (token: string): Promise<string | null> => {
+  // Buscar token en la base de datos
+  const { data, error } = await supabase
+    .from('commercial_access_tokens')
+    .select('*')
+    .eq('token', token)
+    .single();
+  
+  if (error || !data) {
+    console.error('Token no encontrado o error:', error);
+    return null;
+  }
+  
+  // Verificar si el token ha expirado
+  const expiryDate = new Date(data.expires_at);
+  const now = new Date();
+  
+  if (now > expiryDate) {
+    console.error('Token expirado');
+    return null;
+  }
+  
+  // Marcar token como usado
+  await supabase
+    .from('commercial_access_tokens')
+    .update({ is_used: true, used_at: new Date().toISOString() })
+    .eq('id', data.id);
+  
+  return data.commercial_name;
+};
+
+/**
+ * Envía un email con el token de acceso
+ * @param email Email del destinatario
+ * @param name Nombre del destinatario
+ * @param token Token de acceso
+ * @param period Período del extracto
+ * @returns true si se envió correctamente, false en caso contrario
+ */
+export const sendTokenEmail = async (
+  email: string,
+  name: string,
+  token: string,
+  period: string
+): Promise<boolean> => {
+  try {
+    // Construir URL con el token
+    const baseUrl = window.location.origin;
+    const tokenUrl = `${baseUrl}/token-login?token=${token}`;
+    
+    // Enviar email
+    const result = await sendCommercialAccessToken(
+      email,
+      name,
+      tokenUrl,
+      period
+    );
+    
+    return result.status === 200;
+  } catch (error) {
+    console.error('Error al enviar email:', error);
+    return false;
+  }
+};
+
+/**
+ * Registra una notificación enviada a un comercial
+ * @param commercialId ID del comercial
+ * @param statementId ID del extracto bancario
+ * @param tokenId ID del token generado
+ * @param status Estado del envío
+ * @param errorMessage Mensaje de error si hubo alguno
+ */
+export const registerNotification = async (
+  commercialId: string,
+  statementId: string,
+  tokenId: string,
+  status: boolean,
+  errorMessage?: string
+) => {
+  const { error } = await supabase
+    .from('commercial_notifications')
+    .insert({
+      commercial_id: commercialId,
+      statement_id: statementId,
+      token_id: tokenId,
+      status,
+      error_message: errorMessage,
+      sent_at: new Date().toISOString()
+    });
+  
+  if (error) {
+    console.error('Error al registrar notificación:', error);
+    throw error;
+  }
+};
+
+/**
+ * Obtiene las notificaciones enviadas para un extracto bancario
+ * @param statementId ID del extracto bancario
+ * @returns Lista de notificaciones con datos del comercial
+ */
+export const getNotificationsByStatement = async (
+  statementId: string
+): Promise<CommercialNotification[]> => {
+  const { data, error } = await supabase
+    .from('commercial_notifications')
+    .select(`
+      *,
+      commercial:commercial_id (
+        id,
+        name,
+        email
+      )
+    `)
+    .eq('statement_id', statementId)
+    .order('sent_at', { ascending: false });
+  
+  if (error) {
+    console.error('Error al obtener notificaciones:', error);
+    throw error;
+  }
+  
+  return data || [];
+};
+
+/**
+ * Obtiene los comerciales que tienen transacciones en un extracto bancario
+ * @param statementId ID del extracto bancario
+ * @returns Lista de comerciales
+ */
+export const getCommercialsWithTransactionsInStatement = async (
+  statementId: string
+): Promise<Commercial[]> => {
+  // Obtener transacciones del extracto que tienen comercial asignado
+  const { data: transactionsData, error: transactionsError } = await supabase
+    .from('transactions')
+    .select('assigned_to')
+    .eq('bank_statement_id', statementId)
+    .not('assigned_to', 'is', null);
+  
+  if (transactionsError) {
+    console.error('Error al obtener transacciones:', transactionsError);
+    throw transactionsError;
+  }
+  
+  if (!transactionsData || transactionsData.length === 0) {
+    return [];
+  }
+  
+  // Extraer nombres de comerciales únicos
+  const commercialNames = [...new Set(transactionsData
+    .map(t => t.assigned_to)
+    .filter(Boolean))];
+  
+  // Obtener datos de los comerciales
+  const { data: commercialsData, error: commercialsError } = await supabase
+    .from('commercials')
+    .select('*')
+    .in('name', commercialNames)
+    .eq('is_active', true);
+  
+  if (commercialsError) {
+    console.error('Error al obtener datos de comerciales:', commercialsError);
+    throw commercialsError;
+  }
+  
+  return commercialsData || [];
+};
+
+/**
+ * Notifica a los comerciales que tienen transacciones en un extracto bancario
+ * @param statement Extracto bancario
+ * @returns Resultado de la operación con contadores
+ */
+export const notifyAllCommercials = async (statement: BankStatement): Promise<{
+  total: number;
+  success: number;
+  failed: number;
+}> => {
+  // Obtener comerciales con transacciones en este extracto
+  const commercials = await getCommercialsWithTransactionsInStatement(statement.id);
+  
+  if (commercials.length === 0) {
+    return { total: 0, success: 0, failed: 0 };
+  }
+  
+  let successCount = 0;
+  let failedCount = 0;
+  
+  // Buscar usuarios comerciales en la autenticación de Supabase
+  const { data: authUsers, error: authError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('role', 'commercial');
+  
+  if (authError) {
+    console.error('Error al obtener usuarios comerciales:', authError);
+    return { 
+      total: commercials.length, 
+      success: 0, 
+      failed: commercials.length 
+    };
+  }
+  
+  // Crear un mapa de nombres de comerciales a usuarios
+  const commercialUserMap = new Map();
+  authUsers?.forEach(user => {
+    if (user.name) {
+      commercialUserMap.set(user.name.toLowerCase(), user);
+    }
+  });
+  
+  // Enviar notificaciones para cada comercial
+  await Promise.all(commercials.map(async (commercial) => {
+    try {
+      // Buscar si existe un usuario para este comercial
+      const commercialUser = commercialUserMap.get(commercial.name.toLowerCase());
+      
+      if (!commercialUser) {
+        console.warn(`No se encontró usuario para el comercial ${commercial.name}`);
+        failedCount++;
+        
+        // Registrar notificación fallida
+        await registerNotification(
+          commercial.id,
+          statement.id,
+          '0',
+          false,
+          `No existe usuario para el comercial ${commercial.name}`
+        );
+        return;
+      }
+      
+      // Enviar email de notificación (sin token, solo con enlace a la plataforma)
+      const emailSent = await sendCommercialNotification(
+        commercial.email,
+        commercial.name,
+        statement.period
+      );
+      
+      // Registrar notificación
+      await registerNotification(
+        commercial.id,
+        statement.id,
+        '0', // Ya no usamos tokens
+        emailSent,
+        emailSent ? undefined : 'Error al enviar email'
+      );
+      
+      if (emailSent) {
+        successCount++;
+      } else {
+        failedCount++;
+      }
+    } catch (error) {
+      console.error(`Error al notificar al comercial ${commercial.name}:`, error);
+      failedCount++;
+      
+      // Intentar registrar el error
+      try {
+        await registerNotification(
+          commercial.id,
+          statement.id,
+          '0',
+          false,
+          error instanceof Error ? error.message : 'Error desconocido'
+        );
+      } catch (regError) {
+        console.error('Error al registrar notificación de error:', regError);
+      }
+    }
+  }));
+  
+  return {
+    total: commercials.length,
+    success: successCount,
+    failed: failedCount
+  };
+};
+
+/**
+ * Envía una notificación por email a un comercial (sin token)
+ * @param email Email del comercial
+ * @param name Nombre del comercial
+ * @param period Período del extracto
+ * @returns true si se envió correctamente, false en caso contrario
+ */
+export const sendCommercialNotification = async (
+  email: string,
+  name: string,
+  period: string
+): Promise<boolean> => {
+  try {
+    // Construir URL directa a la plataforma
+    const baseUrl = window.location.origin;
+    const appUrl = `${baseUrl}/commercial/transactions`;
+    
+    // Enviar email con enlace directo a la plataforma
+    const result = await sendCommercialAccessToken(
+      email,
+      name,
+      appUrl,
+      period,
+      true // Indicar que es una notificación sin token
+    );
+    
+    return result.status === 200;
+  } catch (error) {
+    console.error('Error al enviar notificación:', error);
+    return false;
+  }
+};

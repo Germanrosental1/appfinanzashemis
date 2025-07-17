@@ -56,6 +56,17 @@ const ProtectedRoute = ({ children, requiredRole, allowedRoles }: ProtectedRoute
   return <>{children}</>;
 };
 
+// Componente para redirección basada en rol
+const RoleBasedRedirect = () => {
+  const { user } = useAuth();
+  
+  if (user?.role === 'commercial') {
+    return <Navigate to="/commercial/transactions" replace />;
+  }
+  
+  return <Navigate to="/finance/dashboard" replace />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -64,17 +75,17 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Navigate to="/finance/dashboard" replace />} />
+            <Route path="/" element={<RoleBasedRedirect />} />
             <Route path="/login" element={<LoginPage />} />
             
             {/* Rutas protegidas para usuarios con rol finance */}
             <Route path="/finance/dashboard" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['admin', 'finance']}>
                 <FinanceDashboard />
               </ProtectedRoute>
             } />
             <Route path="/finance/accounts/:accountId" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['admin', 'finance']}>
                 <AccountDetail />
               </ProtectedRoute>
             } />

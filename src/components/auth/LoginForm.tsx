@@ -20,7 +20,8 @@ const LoginForm = () => {
     try {
       const success = await login(email, password);
       if (success) {
-        navigate("/finance/dashboard");
+        // Usar la redirección basada en roles
+        navigate("/");
       }
     } finally {
       setIsSubmitting(false);

@@ -47,7 +47,7 @@ const FinanceDashboard = () => {
           <h1 className="text-2xl font-semibold">Dashboard Financiero</h1>
         </div>
         
-        <DashboardMetricsCard metrics={metrics} />
+        {/* Las métricas se han eliminado del dashboard y solo se muestran en la vista del extracto */}
         
         {selectedStatementId ? (
           <StatementTransactionsView 
@@ -59,7 +59,7 @@ const FinanceDashboard = () => {
             <div className="lg:col-span-2">
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <h2 className="text-xl font-bold">Extractos Bancarios Procesados</h2>
+                  <div></div> {/* Espacio vacío donde estaba el título */}
                   <Button variant="outline" size="sm" className="flex items-center gap-2">
                     <RefreshCw className="h-4 w-4" />
                     Actualizar
