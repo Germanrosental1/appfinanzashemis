@@ -1,27 +1,27 @@
-// API serverless para listar usuarios comerciales usando la clave de servicio
+// Serverless API to list commercial users using the service key
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
-  // Solo permitir solicitudes GET
+  // Only allow GET requests
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Método no permitido' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // Crear cliente de Supabase con la clave de servicio
+    // Create Supabase client with service key
     const supabaseAdmin = createClient(
       process.env.VITE_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    // Obtener todos los usuarios
+    // Get all users
     const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
 
     if (error) {
       throw error;
     }
 
-    // Filtrar solo usuarios comerciales basados en sus metadatos
+    // Filter only commercial users based on their metadata
     const commercialUsers = users
       .filter(user => user.user_metadata?.role === 'commercial')
       .map(user => ({
@@ -32,10 +32,10 @@ export default async function handler(req, res) {
         created_at: user.created_at
       }));
 
-    // Devolver la lista de usuarios comerciales
+    // Return the list of commercial users
     return res.status(200).json({ users: commercialUsers });
   } catch (error) {
-    console.error('Error al listar usuarios comerciales:', error);
+    console.error('Error listing commercial users:', error);
     return res.status(500).json({ error: error.message });
   }
 }

@@ -5,11 +5,11 @@ import { supabase } from '@/lib/supabaseClient';
 import { updateCommercialStatus, updateCommercialEmail } from '@/lib/commercialService';
 import { Commercial } from '@/types/commercial';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/components/layout/AppLayout';
 
-// Componentes UI
+// UI Components
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -27,7 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// Lista estática de comerciales
+// Static list of commercial users
 const COMMERCIAL_NAMES = [
   'Allia Klipp',
   'Danielle Bury',
@@ -64,12 +64,12 @@ const CommercialManagementPage: React.FC = () => {
     }
   }, [user, navigate]);
 
-  // Cargar comerciales existentes
+  // Load existing commercial users
   useEffect(() => {
     fetchCommercials();
   }, []);
 
-  // Función para cargar comerciales existentes
+  // Function to load existing commercial users
   const fetchCommercials = async () => {
     try {
       const { data, error } = await supabase
@@ -81,15 +81,15 @@ const CommercialManagementPage: React.FC = () => {
         throw error;
       }
 
-      // Verificar si todos los comerciales de la lista estática existen en la base de datos
+      // Verify if all commercial users from the static list exist in the database
       // Si no existen, crearlos con email vacío
       const existingNames = data?.map(c => c.name) || [];
       const missingNames = COMMERCIAL_NAMES.filter(name => !existingNames.includes(name));
 
       if (missingNames.length > 0) {
-        console.log(`Creando ${missingNames.length} comerciales faltantes...`);
+        console.log(`Creating ${missingNames.length} missing commercial users...`);
         
-        // Crear comerciales faltantes
+        // Create missing commercial users
         const newCommercials = missingNames.map(name => ({
           name,
           email: '',
@@ -101,14 +101,14 @@ const CommercialManagementPage: React.FC = () => {
           .insert(newCommercials);
 
         if (insertError) {
-          console.error('Error al crear comerciales faltantes:', insertError);
+          console.error('Error creating missing commercial users:', insertError);
           toast({
             variant: "destructive",
             title: "Error",
-            description: "No se pudieron crear todos los comerciales necesarios",
+            description: "Could not create all required commercial users",
           });
         } else {
-          // Recargar los comerciales después de insertar los nuevos
+          // Reload commercial users after inserting new ones
           const { data: updatedData, error: fetchError } = await supabase
             .from('commercials')
             .select('*')
@@ -118,8 +118,8 @@ const CommercialManagementPage: React.FC = () => {
           
           setCommercials(updatedData || []);
           toast({
-            title: "Comerciales inicializados",
-            description: `Se han creado ${missingNames.length} comerciales faltantes`,
+            title: "Commercial users initialized",
+            description: `${missingNames.length} missing commercial users have been created`,
           });
         }
       } else {
@@ -128,23 +128,23 @@ const CommercialManagementPage: React.FC = () => {
       
       setLoading(false);
     } catch (error) {
-      console.error('Error al cargar comerciales:', error);
+      console.error('Error loading commercial users:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "No se pudieron cargar los comerciales",
+        description: error.message || "Could not load commercial users",
       });
       setLoading(false);
     }
   };
 
-  // Función para guardar/actualizar un comercial
+  // Function to save/update a commercial user
   const handleSaveCommercial = async () => {
     if (!currentCommercial) return;
     
     setIsSaving(true);
     try {
-      console.log('Guardando comercial:', currentCommercial.id, 'con email:', currentCommercial.email, 'y estado:', currentCommercial.isActive);
+      console.log('Saving commercial user:', currentCommercial.id, 'with email:', currentCommercial.email, 'and status:', currentCommercial.isActive);
       
       // Usar la nueva función del servicio
       const updatedCommercial = await updateCommercialEmail(
@@ -165,29 +165,29 @@ const CommercialManagementPage: React.FC = () => {
       ));
       
       toast({
-        title: "Comercial actualizado",
-        description: `La información de ${currentCommercial.name} ha sido actualizada`,
+        title: "Commercial user updated",
+        description: `${currentCommercial.name}'s information has been updated`,
       });
       
       setIsEditDialogOpen(false);
     } catch (error) {
-      console.error('Error al actualizar comercial:', error);
+      console.error('Error updating commercial user:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "No se pudo actualizar el comercial",
+        description: error.message || "Could not update the commercial user",
       });
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Función para actualizar el estado de un comercial
+  // Function to update a commercial user's status
   const toggleCommercialStatus = async (commercial: Commercial) => {
     try {
       const newIsActive = !commercial.isActive;
       
-      console.log('Actualizando comercial:', commercial.id, 'a estado:', newIsActive);
+      console.log('Updating commercial user:', commercial.id, 'to status:', newIsActive);
       
       // Usar la nueva función del servicio
       const updatedCommercial = await updateCommercialStatus(commercial.id, newIsActive);
@@ -208,11 +208,11 @@ const CommercialManagementPage: React.FC = () => {
         description: `${commercial.name} ha sido ${newIsActive ? 'activado' : 'desactivado'}`,
       });
     } catch (error) {
-      console.error('Error al actualizar estado del comercial:', error);
+      console.error('Error updating commercial user status:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "No se pudo actualizar el estado del comercial",
+        description: error.message || "Could not update commercial user status",
       });
     }
   };
@@ -223,93 +223,97 @@ const CommercialManagementPage: React.FC = () => {
     setIsEditDialogOpen(true);
   };
 
-  // Función para formatear fecha
+  // Function to format date
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), 'dd MMM yyyy, HH:mm', { locale: es });
-    } catch (e) {
-      return 'Fecha inválida';
+      return format(new Date(dateString), "MMM dd yyyy, HH:mm", { locale: enUS });
+    } catch (error) {
+      return "Invalid date";
     }
   };
 
   return (
     <AppLayout>
-      <div className="container mx-auto py-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Gestión de Comerciales</h1>
+      <div className="flex flex-col w-full h-full">
+        <div className="flex justify-between items-center p-6">
+          <h1 className="text-3xl font-bold">Commercial Users Management</h1>
         </div>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Lista de Comerciales</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="w-full px-6 pb-6">
+          <Card className="w-full overflow-hidden">
+            <CardHeader>
+              <CardTitle>Commercial Users List</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
             {loading && (
               <div className="text-center py-8 text-muted-foreground">
-                Cargando comerciales...
+                Loading commercial users...
               </div>
             )}
             
             {!loading && (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Fecha Creación</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {commercials.map((commercial) => (
-                    <TableRow key={commercial.id}>
-                      <TableCell className="font-medium">{commercial.name}</TableCell>
-                      <TableCell>{commercial.email || '(No configurado)'}</TableCell>
-                      <TableCell>{formatDate(commercial.createdAt)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            checked={commercial.isActive}
-                            onCheckedChange={() => toggleCommercialStatus(commercial)}
-                          />
-                          <Badge variant="outline" className={commercial.isActive ? 
-                            "bg-green-100 text-green-800" : 
-                            "bg-gray-100 text-gray-800"}>
-                            {commercial.isActive ? "Activo" : "Inactivo"}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => openEditDialog(commercial)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+              <div className="w-full overflow-x-auto">
+                <Table className="w-full">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Creation Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {commercials.map((commercial) => (
+                      <TableRow key={commercial.id}>
+                        <TableCell className="font-medium">{commercial.name}</TableCell>
+                        <TableCell>{commercial.email || '(Not configured)'}</TableCell>
+                        <TableCell>{formatDate(commercial.createdAt)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={commercial.isActive}
+                              onCheckedChange={() => toggleCommercialStatus(commercial)}
+                            />
+                            <Badge variant="outline" className={commercial.isActive ? 
+                              "bg-green-100 text-green-800" : 
+                              "bg-gray-100 text-gray-800"}>
+                              {commercial.isActive ? "Active" : "Inactive"}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => openEditDialog(commercial)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
-        {/* Diálogo para editar email del comercial */}
+        {/* Dialog to edit commercial user email */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Editar Email de Comercial</DialogTitle>
+              <DialogTitle>Edit Commercial User Email</DialogTitle>
               <DialogDescription>
-                Actualice el email para {currentCommercial?.name}.
+                Update email for {currentCommercial?.name}.
               </DialogDescription>
             </DialogHeader>
             
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="name">Nombre</Label>
+                <Label htmlFor="name">Name</Label>
                 <Input
                   id="name"
                   value={currentCommercial?.name || ''}
@@ -322,7 +326,7 @@ const CommercialManagementPage: React.FC = () => {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="correo@ejemplo.com"
+                  placeholder="email@example.com"
                   value={currentCommercial?.email || ''}
                   onChange={(e) => currentCommercial && setCurrentCommercial({
                     ...currentCommercial,
@@ -340,24 +344,24 @@ const CommercialManagementPage: React.FC = () => {
                     isActive: checked
                   })}
                 />
-                <Label htmlFor="isActive">Comercial activo</Label>
+                <Label htmlFor="isActive">Active commercial user</Label>
               </div>
             </div>
             
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Cancelar
+                Cancel
               </Button>
               <Button onClick={handleSaveCommercial} disabled={isSaving}>
                 {isSaving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Guardando...
+                    Saving...
                   </>
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    Guardar
+                    Save
                   </>
                 )}
               </Button>

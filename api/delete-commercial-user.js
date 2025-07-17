@@ -1,47 +1,47 @@
-// API serverless para eliminar usuarios comerciales usando la clave de servicio
+// Serverless API to delete commercial users using the service key
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
-  // Solo permitir solicitudes DELETE
+  // Only allow DELETE requests
   if (req.method !== 'DELETE') {
-    return res.status(405).json({ error: 'Método no permitido' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     const { userId } = req.query;
 
     if (!userId) {
-      return res.status(400).json({ error: 'Se requiere el ID del usuario' });
+      return res.status(400).json({ error: 'User ID is required' });
     }
 
-    // Crear cliente de Supabase con la clave de servicio
+    // Create Supabase client with service key
     const supabaseAdmin = createClient(
       process.env.VITE_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    // Eliminar el usuario
+    // Delete the user
     const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (error) {
       throw error;
     }
 
-    // Intentar eliminar también de la tabla users si existe
+    // Try to delete from the users table as well if it exists
     try {
       await supabaseAdmin
         .from('users')
         .delete()
         .eq('id', userId);
     } catch (tableError) {
-      console.log('No se pudo eliminar de la tabla users o no existía:', tableError);
-      // No lanzamos error aquí porque lo importante es que se eliminó de Auth
+      console.log('Could not delete from users table or it did not exist:', tableError);
+      // We don't throw an error here because what's important is that it was deleted from Auth
     }
 
-    // Devolver éxito
-    return res.status(200).json({ success: true, message: 'Usuario eliminado correctamente' });
+    // Return success
+    return res.status(200).json({ success: true, message: 'User successfully deleted' });
   } catch (error) {
-    console.error('Error al eliminar usuario comercial:', error);
+    console.error('Error deleting commercial user:', error);
     return res.status(500).json({ error: error.message });
   }
 }

@@ -1,41 +1,41 @@
-// API para crear usuarios comerciales
+// API to create commercial users
 import { createClient } from '@supabase/supabase-js';
 
-// Inicializar cliente de Supabase con la clave anónima
-// Usamos la clave anónima porque estamos usando signUp que funciona con permisos normales
+// Initialize Supabase client with anonymous key
+// We use the anonymous key because we're using signUp which works with normal permissions
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
   process.env.VITE_SUPABASE_ANON_KEY
 );
 
 export default async function handler(req, res) {
-  // Configurar CORS
+  // Configure CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Manejar preflight OPTIONS request
+  // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
   
-  // Solo permitir método POST
+  // Only allow POST method
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método no permitido' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     const { email, name, password } = req.body;
 
-    // Validar datos
+    // Validate data
     if (!email || !name) {
-      return res.status(400).json({ error: 'Email y nombre son requeridos' });
+      return res.status(400).json({ error: 'Email and name are required' });
     }
 
-    // Generar contraseña aleatoria si no se proporciona
+    // Generate random password if not provided
     const userPassword = password || generateRandomPassword();
 
-    // Crear usuario en Supabase Auth usando signUp en lugar de admin.createUser
+    // Create user in Supabase Auth using signUp instead of admin.createUser
     const { data: authUser, error: authError } = await supabase.auth.signUp({
       email,
       password: userPassword,
@@ -48,16 +48,16 @@ export default async function handler(req, res) {
     });
 
     if (authError) {
-      console.error('Error al crear usuario en Auth:', authError);
+      console.error('Error creating user in Auth:', authError);
       return res.status(400).json({ error: authError.message });
     }
     
-    // Verificar que el usuario se creó correctamente
+    // Verify that the user was created correctly
     if (!authUser || !authUser.user) {
-      return res.status(500).json({ error: 'No se pudo crear el usuario en Auth' });
+      return res.status(500).json({ error: 'Could not create user in Auth' });
     }
     
-    // Construir un objeto de usuario con la información disponible
+    // Build a user object with the available information
     const userData = {
       id: authUser.user.id,
       email: email,
@@ -66,19 +66,19 @@ export default async function handler(req, res) {
       created_at: new Date().toISOString(),
     };
 
-    // Devolver éxito
+    // Return success
     return res.status(200).json({ 
       success: true, 
       user: userData,
       password: userPassword
     });
   } catch (error) {
-    console.error('Error al crear usuario comercial:', error);
-    return res.status(500).json({ error: error.message || 'Error interno del servidor' });
+    console.error('Error creating commercial user:', error);
+    return res.status(500).json({ error: error.message || 'Internal server error' });
   }
 }
 
-// Función para generar contraseña aleatoria
+// Function to generate random password
 function generateRandomPassword() {
   const length = 12;
   const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
