@@ -23,16 +23,16 @@ import {
 import { Transaction } from "@/types";
 import { format } from "date-fns";
 
-// Esquema de validación para el formulario
+// Validation schema for the form
 const transactionSchema = z.object({
-  date: z.string().min(1, "La fecha es obligatoria"),
-  account: z.string().min(1, "La cuenta es obligatoria"),
-  merchant: z.string().min(1, "El comerciante es obligatorio"),
+  date: z.string().min(1, "Date is required"),
+  account: z.string().min(1, "Account is required"),
+  merchant: z.string().min(1, "Merchant is required"),
   amount: z.coerce.number({
-    required_error: "El importe es obligatorio",
-    invalid_type_error: "El importe debe ser un número",
+    required_error: "Amount is required",
+    invalid_type_error: "Amount must be a number",
   }),
-  currency: z.string().min(1, "La moneda es obligatoria"),
+  currency: z.string().min(1, "Currency is required"),
   category: z.string().optional(),
   project: z.string().optional(),
   comments: z.string().optional(),
@@ -60,7 +60,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   bankStatementId,
   preselectedCommercial,
 }) => {
-  // Configurar el formulario con los valores iniciales si existen
+  // Configure the form with initial values if they exist
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionSchema),
     defaultValues: initialData
@@ -107,7 +107,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 name="date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Fecha</FormLabel>
+                    <FormLabel>Date</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -120,9 +120,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 name="account"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cuenta</FormLabel>
+                    <FormLabel>Account</FormLabel>
                     <FormControl>
-                      <Input placeholder="Últimos 4 dígitos" {...field} />
+                      <Input placeholder="Last 4 digits" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -134,9 +134,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               name="merchant"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Concepto</FormLabel>
+                  <FormLabel>Concept</FormLabel>
                   <FormControl>
-                    <Input placeholder="Descripción del gasto" {...field} />
+                    <Input placeholder="Expense description" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -148,7 +148,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 name="amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Importe</FormLabel>
+                    <FormLabel>Amount</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -166,7 +166,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 name="currency"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Moneda</FormLabel>
+                    <FormLabel>Currency</FormLabel>
                     <FormControl>
                       <Input placeholder="USD" {...field} />
                     </FormControl>
@@ -180,9 +180,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               name="assignedTo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Asignado a (Comercial)</FormLabel>
+                  <FormLabel>Assigned to (Commercial)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Nombre del comercial" {...field} />
+                    <Input placeholder="Commercial name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -194,9 +194,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Categoría</FormLabel>
+                    <FormLabel>Category</FormLabel>
                     <FormControl>
-                      <Input placeholder="Categoría" {...field} />
+                      <Input placeholder="Category" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -207,9 +207,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 name="project"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Proyecto</FormLabel>
+                    <FormLabel>Project</FormLabel>
                     <FormControl>
-                      <Input placeholder="Proyecto" {...field} />
+                      <Input placeholder="Project" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -221,10 +221,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               name="comments"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Comentarios</FormLabel>
+                  <FormLabel>Comments</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Añadir comentarios..."
+                      placeholder="Add comments..."
                       className="resize-none"
                       {...field}
                     />
@@ -235,9 +235,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>
-                Cancelar
+                Cancel
               </Button>
-              <Button type="submit">Guardar</Button>
+              <Button type="submit">Save</Button>
             </DialogFooter>
           </form>
         </Form>

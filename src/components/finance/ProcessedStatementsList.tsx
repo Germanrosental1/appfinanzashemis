@@ -106,53 +106,51 @@ const ProcessedStatementsList: React.FC<ProcessedStatementsListProps> = ({
     <>
       <Card className="w-full">
         <CardHeader>
-          <CardTitle>Extractos Bancarios Procesados</CardTitle>
+          <CardTitle>Processed Bank Statements</CardTitle>
           <CardDescription>
-            Lista de extractos bancarios subidos y procesados
+            List of uploaded and processed bank statements
           </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="text-center py-8 text-gray-500">
               <Loader2 className="mx-auto h-12 w-12 text-gray-400 mb-3 animate-spin" />
-              <p>Cargando extractos bancarios...</p>
+              <p>Loading bank statements...</p>
             </div>
           ) : error ? (
             <div className="text-center py-8 text-gray-500">
-              <p className="text-red-500">{error}</p>
-              <p className="text-sm">Intenta recargar la página</p>
+              <p className="text-red-500 font-medium">Error loading bank statements</p>
+              <p className="mt-1">Please try refreshing the page</p>
             </div>
           ) : statements.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <FileText className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-              <p>No hay extractos procesados</p>
-              <p className="text-sm">Sube un extracto para comenzar</p>
+              <p>No processed statements</p>
+              <p className="text-sm">Upload a statement to begin</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Archivo</TableHead>
-                  <TableHead>Período</TableHead>
-                  <TableHead>Fecha de carga</TableHead>
-                  <TableHead>Transacciones</TableHead>
-                  <TableHead>Cuentas</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead>File</TableHead>
+                  <TableHead>Upload Date</TableHead>
+                  <TableHead>Transactions</TableHead>
+                  <TableHead>Accounts</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {statements.map((statement) => (
                   <TableRow key={statement.id}>
                     <TableCell className="font-medium">{statement.fileName}</TableCell>
-                    <TableCell>{statement.period}</TableCell>
                     <TableCell>{format(new Date(statement.uploadDate), 'dd/MM/yyyy, HH:mm')}</TableCell>
                     <TableCell>{statement.transactionCount}</TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         <Badge variant="outline" className="bg-blue-50">
                           <CreditCard className="h-3 w-3 mr-1" />
-                          {statement.accounts.length} {statement.accounts.length === 1 ? 'cuenta' : 'cuentas'}
+                          {statement.accounts.length} {statement.accounts.length === 1 ? 'account' : 'accounts'}
                         </Badge>
                         
                         <TooltipProvider>
@@ -164,7 +162,7 @@ const ProcessedStatementsList: React.FC<ProcessedStatementsListProps> = ({
                             </TooltipTrigger>
                             <TooltipContent>
                               <div className="max-w-xs">
-                                <p className="font-semibold mb-1">Últimos 4 dígitos:</p>
+                                <p className="font-semibold mb-1">Last 4 digits:</p>
                                 <div className="flex flex-wrap gap-1">
                                   {statement.accounts.map(account => (
                                     <Badge key={account} variant="secondary" className="text-xs">
@@ -182,7 +180,7 @@ const ProcessedStatementsList: React.FC<ProcessedStatementsListProps> = ({
                                     showAccountsDetails(statement.accounts);
                                   }}
                                 >
-                                  Ver completo
+                                  View all
                                 </Button>
                               </div>
                             </TooltipContent>
@@ -199,10 +197,10 @@ const ProcessedStatementsList: React.FC<ProcessedStatementsListProps> = ({
                           : "bg-yellow-100 text-yellow-800"
                       }`}>
                         {statement.status === "processed" 
-                          ? "Procesado" 
+                          ? "Processed" 
                           : statement.status === "error"
                           ? "Error"
-                          : "Procesando"}
+                          : "Processing"}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -214,7 +212,7 @@ const ProcessedStatementsList: React.FC<ProcessedStatementsListProps> = ({
                           disabled={statement.status !== "processed"}
                         >
                           <Eye className="h-4 w-4 mr-1" />
-                          Ver detalle
+                          View details
                         </Button>
                         
                         <DropdownMenu>
@@ -229,7 +227,7 @@ const ProcessedStatementsList: React.FC<ProcessedStatementsListProps> = ({
                               className="text-red-600 focus:text-red-600"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              Eliminar extracto
+                              Delete statement
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -246,13 +244,13 @@ const ProcessedStatementsList: React.FC<ProcessedStatementsListProps> = ({
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción eliminará el extracto bancario "{statementToDelete?.fileName}" y todas sus transacciones asociadas. Esta acción no se puede deshacer.
+              This action will delete the bank statement "{statementToDelete?.fileName}" and all its associated transactions. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={(e) => {
                 e.preventDefault();
@@ -264,10 +262,10 @@ const ProcessedStatementsList: React.FC<ProcessedStatementsListProps> = ({
               {isDeleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Eliminando...
+                  Deleting...
                 </>
               ) : (
-                'Eliminar'
+                'Delete'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -278,17 +276,17 @@ const ProcessedStatementsList: React.FC<ProcessedStatementsListProps> = ({
       <Dialog open={showAccountsDialog} onOpenChange={setShowAccountsDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Detalle de cuentas</DialogTitle>
+            <DialogTitle>Account Details</DialogTitle>
             <DialogDescription>
-              Lista completa de cuentas asociadas a este extracto
+              Complete list of accounts associated with this statement
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-[60vh] overflow-y-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Número de cuenta</TableHead>
-                  <TableHead>Últimos 4 dígitos</TableHead>
+                  <TableHead>Account Number</TableHead>
+                  <TableHead>Last 4 digits</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import hemisphereLogo from '@/assets/hemisphere-logo.png';
 
 // Importar componentes de UI
 import {
@@ -25,7 +26,8 @@ import {
   LogOut,
   Menu,
   User,
-  ChevronDown
+  ChevronDown,
+  Mail
 } from 'lucide-react';
 
 // Componentes UI adicionales
@@ -62,12 +64,12 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen bg-background">
+      <div className="flex min-h-screen w-full bg-background">
         {/* Barra lateral */}
         <Sidebar>
           <SidebarHeader>
             <div className="flex items-center justify-center py-4">
-              <h1 className="text-xl font-bold text-primary">FinFlow</h1>
+              <img src={hemisphereLogo} alt="HEMISPHERE BRANDS" className="h-10" />
             </div>
           </SidebarHeader>
           
@@ -99,13 +101,13 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                   >
                     <Link to="/commercial/transactions">
                       <FileText className="size-4" />
-                      <span>Transacciones</span>
+                      <span>Transactions</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
               
-              {/* Comerciales - Visible para admin y finance */}
+              {/* Notificaciones a comerciales - Visible para admin y finance */}
               {(user?.role === 'admin' || user?.role === 'finance') && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
@@ -113,8 +115,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                     isActive={isActive('/finance/commercials')}
                   >
                     <Link to="/finance/commercials">
-                      <Users className="size-4" />
-                      <span>Comerciales</span>
+                      <Mail className="size-4" />
+                      <span>Commercial Notifications</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -129,7 +131,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                   >
                     <Link to="/admin/commercial-users">
                       <User className="size-4" />
-                      <span>Usuarios Comerciales</span>
+                      <span>Commercial Users</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -145,9 +147,9 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         </Sidebar>
         
         {/* Contenido principal */}
-        <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="flex flex-col flex-1 overflow-hidden w-full">
           {/* Header */}
-          <header className="h-16 border-b bg-card flex items-center px-4 md:px-6">
+          <header className="h-16 border-b bg-card flex items-center px-4 md:px-6 w-full">
             <div className="flex-1 flex justify-between items-center">
               <Button variant="ghost" size="icon" className="md:hidden">
                 <Menu className="h-5 w-5" />
@@ -182,13 +184,13 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           </header>
           
           {/* Contenido */}
-          <main className="flex-1 overflow-auto p-4 md:p-6">
+          <main className="flex-1 overflow-auto w-full">
             {children}
           </main>
           
           {/* Footer */}
           <footer className="border-t py-4 px-6 text-center text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} FinFlow. Todos los derechos reservados.
+            &copy; {new Date().getFullYear()} HEMISPHERE BRANDS. All rights reserved.
           </footer>
         </div>
       </div>

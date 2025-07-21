@@ -30,7 +30,7 @@ const CommercialUserManager: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [showForm, setShowForm] = useState(false);
 
-  // Cargar usuarios comerciales usando la API serverless
+  // Load commercial users using the serverless API
   const loadUsers = async () => {
     setLoading(true);
     try {
@@ -39,21 +39,21 @@ const CommercialUserManager: React.FC = () => {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || 'Error al cargar usuarios');
+        throw new Error(data.error || 'Error loading users');
       }
       
-      // Establecer los usuarios comerciales
+      // Set commercial users
       setUsers(data.users || []);
       
-      // Si no hay usuarios, mostrar un mensaje
+      // If there are no users, show a message
       if (!data.users || data.users.length === 0) {
-        console.log('No se encontraron usuarios comerciales');
+        console.log('No commercial users found');
       }
     } catch (error: any) {
-      toast.error(`Error al cargar usuarios: ${error.message}`);
-      console.error('Error al cargar usuarios:', error);
+      toast.error(`Error loading users: ${error.message}`);
+      console.error('Error loading users:', error);
       
-      // Plan B: intentar cargar desde la tabla users
+      // Plan B: try loading from the users table
       try {
         const { data, error: tableError } = await supabase
           .from('users')
@@ -66,7 +66,7 @@ const CommercialUserManager: React.FC = () => {
           setUsers([]);
         }
       } catch (secondError) {
-        console.error('Error en plan B:', secondError);
+        console.error('Error in plan B:', secondError);
         setUsers([]);
       }
     } finally {
@@ -74,19 +74,19 @@ const CommercialUserManager: React.FC = () => {
     }
   };
 
-  // Función para crear un nuevo usuario comercial usando la API serverless
+  // Function to create a new commercial user using the serverless API
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!newUser.email || !newUser.name) {
-      toast.error('Por favor completa todos los campos');
+      toast.error('Please complete all fields');
       return;
     }
     
     setCreating(true);
     
     try {
-      // Llamar a la API serverless en lugar de la función directa
+      // Call the serverless API instead of the direct function
       const response = await fetch('/api/create-commercial-user', {
         method: 'POST',
         headers: {
@@ -113,43 +113,43 @@ const CommercialUserManager: React.FC = () => {
         created_at: new Date().toISOString(),
       }]);
       
-      // Intentar asociar transacciones pendientes a este usuario comercial
+      // Try to associate pending transactions to this commercial user
       try {
         const transactionsUpdated = await associateCommercialToTransactions(data.user.id, newUser.name);
         if (transactionsUpdated > 0) {
-          toast.success(`Se asociaron ${transactionsUpdated} transacciones pendientes al usuario`);
+          toast.success(`${transactionsUpdated} pending transactions were associated with the user`);
         }
       } catch (associateError) {
-        console.error('Error al asociar transacciones:', associateError);
-        // No mostramos error al usuario para no confundirlo
+        console.error('Error associating transactions:', associateError);
+        // We don't show an error to the user to avoid confusion
       }
       
-      // Limpiar el formulario
+      // Clear the form
       setNewUser({ email: '', name: '' });
       
-      toast.success(`Usuario comercial creado: ${newUser.email}`);
+      toast.success(`Commercial user created: ${newUser.email}`);
       
-      // Guardar la contraseña para mostrarla
+      // Save the password to display it
       setNewPassword(data.password);
       
-      // Recargar la lista de usuarios
+      // Reload the user list
       loadUsers();
     } catch (error: any) {
-      console.error('Error al crear usuario:', error);
-      toast.error(`Error al crear usuario: ${error.message}`);
+      console.error('Error creating user:', error);
+      toast.error(`Error creating user: ${error.message}`);
     } finally {
       setCreating(false);
     }
   };
 
-  // Eliminar un usuario comercial usando la API serverless
+  // Delete a commercial user using the serverless API
   const handleDeleteUser = async (userId: string, email: string) => {
-    if (!confirm(`¿Estás seguro de que deseas eliminar al usuario ${email}?`)) {
+    if (!confirm(`Are you sure you want to delete the user ${email}?`)) {
       return;
     }
 
     try {
-      // Llamar a la API serverless para eliminar el usuario
+      // Call the serverless API to delete the user
       const response = await fetch(`/api/delete-commercial-user?userId=${userId}`, {
         method: 'DELETE',
       });
@@ -157,25 +157,25 @@ const CommercialUserManager: React.FC = () => {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || 'Error al eliminar usuario');
+        throw new Error(data.error || 'Error deleting user');
       }
 
-      toast.success(`Usuario ${email} eliminado con éxito`);
+      toast.success(`User ${email} successfully deleted`);
       
       // Actualizar la lista de usuarios
       setUsers(users.filter(user => user.id !== userId));
       
-      // Recargar la lista completa para asegurarnos de tener datos actualizados
+      // Reload the complete list to ensure we have updated data
       loadUsers();
     } catch (error: any) {
-      toast.error(`Error al eliminar usuario: ${error.message}`);
-      console.error('Error al eliminar usuario:', error);
+      toast.error(`Error deleting user: ${error.message}`);
+      console.error('Error deleting user:', error);
     }
   };
   
-  // Restablecer contraseña de un usuario comercial
+  // Reset a commercial user's password
   const handleResetPassword = async (userId: string, email: string) => {
-    // Generar una contraseña aleatoria de 10 caracteres
+    // Generate a random 10-character password
     const generatePassword = () => {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
       let password = '';
@@ -188,7 +188,7 @@ const CommercialUserManager: React.FC = () => {
     const newPassword = generatePassword();
     
     try {
-      // Llamar a la API serverless para restablecer la contraseña
+      // Call the serverless API to reset the password
       const response = await fetch('/api/reset-commercial-password', {
         method: 'POST',
         headers: {
@@ -203,33 +203,33 @@ const CommercialUserManager: React.FC = () => {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || 'Error al restablecer contraseña');
+        throw new Error(data.error || 'Error resetting password');
       }
       
-      // Mostrar la nueva contraseña
+      // Display the new password
       setNewPassword(newPassword);
-      toast.success(`Contraseña restablecida para ${email}`);
+      toast.success(`Password reset for ${email}`);
       
-      // Mostrar el formulario con la nueva contraseña
+      // Show the form with the new password
       setShowForm(true);
     } catch (error: any) {
-      toast.error(`Error al restablecer contraseña: ${error.message}`);
-      console.error('Error al restablecer contraseña:', error);
+      toast.error(`Error resetting password: ${error.message}`);
+      console.error('Error resetting password:', error);
     }
   };
 
-  // Enviar email con credenciales
+  // Send email with credentials
   const sendCredentialsByEmail = async (email: string, password: string) => {
     try {
-      // Aquí implementarías el envío de email con las credenciales
-      // Usando EmailJS o cualquier otro servicio
-      toast.success(`Credenciales enviadas a ${email}`);
+      // Here you would implement sending email with credentials
+      // Using EmailJS or any other service
+      toast.success(`Credentials sent to ${email}`);
     } catch (error: any) {
-      toast.error(`Error al enviar credenciales: ${error.message}`);
+      toast.error(`Error sending credentials: ${error.message}`);
     }
   };
 
-  // Cargar usuarios al montar el componente
+  // Load users when mounting the component
   useEffect(() => {
     loadUsers();
   }, []);
@@ -238,7 +238,7 @@ const CommercialUserManager: React.FC = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Gestión de Usuarios Comerciales</CardTitle>
+          <CardTitle>Commercial Users Management</CardTitle>
           <div className="flex gap-2">
             <Button 
               variant="outline" 
@@ -252,22 +252,22 @@ const CommercialUserManager: React.FC = () => {
               size="sm" 
               onClick={() => setShowForm(!showForm)}
             >
-              <Plus className="h-4 w-4 mr-2" /> Nuevo Usuario
+              <Plus className="h-4 w-4 mr-2" /> New User
             </Button>
           </div>
         </CardHeader>
         <CardContent>
           {showForm && (
             <form onSubmit={handleCreateUser} className="mb-6 p-4 border rounded-md">
-              <h3 className="text-lg font-medium mb-4">Crear Nuevo Usuario Comercial</h3>
+              <h3 className="text-lg font-medium mb-4">Create New Commercial User</h3>
               <div className="grid gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="name">Nombre</Label>
+                  <Label htmlFor="name">Name</Label>
                   <Input
                     id="name"
                     value={newUser.name}
                     onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                    placeholder="Nombre del comercial"
+                    placeholder="Commercial user name"
                     required
                   />
                 </div>
@@ -278,14 +278,14 @@ const CommercialUserManager: React.FC = () => {
                     type="email"
                     value={newUser.email}
                     onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                    placeholder="email@ejemplo.com"
+                    placeholder="email@example.com"
                     required
                   />
                 </div>
                 
                 {newPassword && (
                   <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-                    <p className="text-sm font-medium text-green-800">Contraseña generada:</p>
+                    <p className="text-sm font-medium text-green-800">Generated password:</p>
                     <p className="text-sm font-mono bg-white p-1 rounded mt-1 border">{newPassword}</p>
                     <Button 
                       type="button" 
@@ -294,7 +294,7 @@ const CommercialUserManager: React.FC = () => {
                       className="mt-2"
                       onClick={() => sendCredentialsByEmail(newUser.email, newPassword)}
                     >
-                      <Send className="h-4 w-4 mr-2" /> Enviar por email
+                      <Send className="h-4 w-4 mr-2" /> Send by email
                     </Button>
                   </div>
                 )}
@@ -303,10 +303,10 @@ const CommercialUserManager: React.FC = () => {
                   <Button type="submit" disabled={creating}>
                     {creating ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" /> Creando...
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" /> Creating...
                       </>
                     ) : (
-                      'Crear Usuario'
+                      'Create User'
                     )}
                   </Button>
                 </div>
@@ -318,17 +318,17 @@ const CommercialUserManager: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nombre</TableHead>
+                  <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Fecha de Creación</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead>Creation Date</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
-                      {loading ? 'Cargando usuarios...' : 'No hay usuarios comerciales registrados'}
+                      {loading ? 'Loading users...' : 'No commercial users registered'}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -345,7 +345,7 @@ const CommercialUserManager: React.FC = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleResetPassword(user.id, user.email)}
-                            title="Restablecer contraseña"
+                            title="Reset password"
                           >
                             <Key className="h-4 w-4 text-blue-500" />
                           </Button>
@@ -353,7 +353,7 @@ const CommercialUserManager: React.FC = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteUser(user.id, user.email)}
-                            title="Eliminar usuario"
+                            title="Delete user"
                           >
                             <Trash className="h-4 w-4 text-red-500" />
                           </Button>

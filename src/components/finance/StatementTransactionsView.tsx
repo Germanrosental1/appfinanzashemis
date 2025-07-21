@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, Loader2, Plus, Pencil, Trash2, Mail, AlertCircle, CheckCircle2 } from "lucide-react";
 import { BankStatement, Transaction } from "@/types";
 import { format } from "date-fns";
+import { enUS } from "date-fns/locale";
 import { es } from "date-fns/locale";
 import { 
   getBankStatementById, 
@@ -40,7 +41,7 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [groupedTransactions, setGroupedTransactions] = useState<Record<string, Transaction[]>>({});
   
-  // Estados para los diálogos
+  // States for dialogs
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -53,39 +54,39 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
   const [commercialUsers, setCommercialUsers] = useState<{id: string, name: string}[]>([]);
   const [loadingCommercialUsers, setLoadingCommercialUsers] = useState(false);
 
-  // Función para cargar usuarios comerciales
+  // Function to load commercial users
   const loadCommercialUsers = async () => {
     try {
-      console.log('Iniciando carga de usuarios comerciales...');
+      console.log('Starting commercial users loading...');
       setLoadingCommercialUsers(true);
       const users = await getCommercialUsersForDropdown();
-      console.log('Usuarios comerciales obtenidos:', users);
+      console.log('Commercial users obtained:', users);
       if (users && users.length > 0) {
-        console.log(`Se encontraron ${users.length} usuarios comerciales`);
+        console.log(`Found ${users.length} commercial users`);
         setCommercialUsers(users);
       } else {
-        console.warn('No se encontraron usuarios comerciales');
+        console.warn('No commercial users found');
         // Intentar cargar usuarios comerciales de nuevo después de un breve retraso
         setTimeout(async () => {
-          console.log('Reintentando cargar usuarios comerciales...');
+          console.log('Retrying commercial users loading...');
           const retryUsers = await getCommercialUsersForDropdown();
-          console.log('Resultado del reintento:', retryUsers);
+          console.log('Retry result:', retryUsers);
           setCommercialUsers(retryUsers || []);
         }, 2000);
       }
     } catch (error) {
-      console.error('Error al cargar usuarios comerciales:', error);
+      console.error('Error loading commercial users:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudieron cargar los usuarios comerciales.",
+        description: "Could not load commercial users.",
       });
     } finally {
       setLoadingCommercialUsers(false);
     }
   };
 
-  // Función para cargar notificaciones previas
+  // Function to load previous notifications
   const loadNotifications = async () => {
     if (!statement) return;
     
@@ -105,78 +106,78 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
     }
   };
 
-  // Función para generar tokens temporales y enviar notificaciones a comerciales
+  // Function to generate temporary tokens and send notifications to commercial users
   const handleNotifyCommercials = async () => {
     if (!statement) return;
     
     try {
       setIsNotifying(true);
       
-      // Notificar a todos los comerciales activos
+      // Notify all active commercial users
       const result = await notifyAllCommercials(statement);
       
-      // Recargar las notificaciones
+      // Reload notifications
       await loadNotifications();
       
-      // Mostrar resultado al usuario
+      // Show result to user
       if (result.success > 0) {
         toast({
-          title: "Notificaciones enviadas",
-          description: `Se han enviado ${result.success} notificaciones correctamente${result.failed > 0 ? ` (${result.failed} fallidas)` : ''}.`,
+          title: "Notifications sent",
+          description: `${result.success} notifications have been sent successfully${result.failed > 0 ? ` (${result.failed} failed)` : ''}.`,
         });
         
         // Abrir el diálogo de notificaciones
         setIsNotificationsDialogOpen(true);
       } else if (result.total === 0) {
         toast({
-          title: "Sin comerciales configurados",
-          description: "No hay comerciales activos configurados en el sistema.",
+          title: "No commercial users configured",
+          description: "There are no active commercial users configured in the system.",
         });
       } else {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "No se pudieron enviar las notificaciones. Intenta de nuevo más tarde.",
+          description: "Could not send notifications. Please try again later.",
         });
       }
       
     } catch (error) {
-      console.error('Error al notificar a comerciales:', error);
+      console.error('Error notifying commercial users:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Ocurrió un error al enviar las notificaciones.",
+        description: "An error occurred while sending notifications.",
       });
     } finally {
       setIsNotifying(false);
     }
   };
   
-  // Función para formatear fecha
+  // Function to format date
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: es });
+      return format(new Date(dateString), "MMMM dd, yyyy, HH:mm", { locale: enUS });
     } catch (error) {
-      return "Fecha inválida";
+      return "Invalid date";
     }
   };
   
-  // Función para exportar transacciones clasificadas
+  // Function to export classified transactions
   const exportClassifiedTransactions = () => {
     try {
-      // Filtrar solo las transacciones clasificadas (que tienen categoría)
+      // Filter only classified transactions (those with a category)
       const classifiedTransactions = transactions.filter(t => t.category);
       
       if (classifiedTransactions.length === 0) {
         toast({
           variant: "destructive",
-          title: "No hay transacciones clasificadas",
-          description: "No hay transacciones clasificadas para exportar.",
+          title: "No classified transactions",
+          description: "There are no classified transactions to export.",
         });
         return;
       }
       
-      // Función para formatear números con coma decimal
+      // Function to format numbers with decimal comma
       const formatNumber = (num: number): string => {
         return num.toFixed(2).replace('.', ',');
       };
@@ -195,10 +196,10 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
         'Comercial': t.commercial || '',
       }));
       
-      // Crear el libro de Excel
+      // Create Excel workbook
       const workbook = XLSX.utils.book_new();
       
-      // Agregar la hoja de detalle
+      // Add detail sheet
       const detailWorksheet = XLSX.utils.json_to_sheet(detailData);
       XLSX.utils.book_append_sheet(workbook, detailWorksheet, "Detalle Transacciones");
       
@@ -222,29 +223,29 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
         categorySummary[category].transactions.push(transaction);
       });
       
-      // Convertir el resumen a un formato para Excel
+      // Convert summary to Excel format
       const summaryData = Object.entries(categorySummary).map(([category, data]) => ({
         'Categoría': category,
         'Monto Total': formatNumber(data.total),
         'Porcentaje': `${formatNumber((data.total / classifiedTransactions.reduce((sum, t) => sum + t.amount, 0)) * 100)}%`
       }));
       
-      // Ordenar por monto total (de mayor a menor)
+      // Sort by total amount (highest to lowest)
       summaryData.sort((a, b) => parseFloat(b['Monto Total']) - parseFloat(a['Monto Total']));
       
-      // Agregar la hoja de resumen
+      // Add summary sheet
       const summaryWorksheet = XLSX.utils.json_to_sheet(summaryData);
       XLSX.utils.book_append_sheet(workbook, summaryWorksheet, "Resumen por Categoría");
       
-      // Crear hojas detalladas por cada categoría
+      // Create detailed sheets for each category
       Object.entries(categorySummary).forEach(([category, data]) => {
         if (data.transactions.length > 0) {
           const categoryData = data.transactions.map(t => ({
-            'Fecha': format(new Date(t.date), "dd/MM/yyyy"),
-            'Comercio': t.merchant,
-            'Monto': formatNumber(t.amount),
-            'Subcategoría': t.subcategory || '',
-            'Comentarios': t.comments || ''
+            'Date': format(new Date(t.date), "MM/dd/yyyy"),
+            'Merchant': t.merchant,
+            'Amount': formatNumber(t.amount),
+            'Subcategory': t.subcategory || '',
+            'Comments': t.comments || ''
           }));
           
           const categoryWorksheet = XLSX.utils.json_to_sheet(categoryData);
@@ -254,56 +255,56 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
         }
       });
       
-      // Generar el archivo y descargarlo
-      const fileName = `Transacciones_Clasificadas_${statement?.fileName.replace(/\.[^/.]+$/, "") || 'Extracto'}_${format(new Date(), "yyyyMMdd")}.xlsx`;
+      // Generate the file and download it
+      const fileName = `Classified_Transactions_${statement?.fileName.replace(/\.[^/.]+$/, "") || 'Statement'}_${format(new Date(), "yyyyMMdd")}.xlsx`;
       XLSX.writeFile(workbook, fileName);
       
       toast({
-        title: "Exportación exitosa",
-        description: `Se han exportado ${classifiedTransactions.length} transacciones clasificadas con resumen por categoría.`,
+        title: "Export successful",
+        description: `${classifiedTransactions.length} classified transactions have been exported with category summary.`,
       });
     } catch (error) {
-      console.error("Error al exportar transacciones:", error);
+      console.error("Error exporting transactions:", error);
       toast({
         variant: "destructive",
-        title: "Error al exportar",
-        description: "Ocurrió un error al exportar las transacciones.",
+        title: "Export error",
+        description: "An error occurred while exporting transactions.",
       });
     }
   };
   
-  // Función para actualizar los datos después de cambios
+  // Function to update data after changes
   const refreshData = async () => {
     try {
       setLoading(true);
       
-      // Obtener el extracto bancario de Supabase
+      // Get bank statement from Supabase
       const supabaseBankStatement = await getBankStatementById(statementId);
       
       if (!supabaseBankStatement) {
-        setError('Extracto no encontrado');
+        setError('Statement not found');
         setLoading(false);
         return;
       }
       
-      // Convertir el extracto bancario de Supabase a nuestro formato
+      // Convert bank statement from Supabase to our format
       const bankStatement = convertFromSupabaseBankStatement(supabaseBankStatement);
       setStatement(bankStatement);
       
-      // Obtener las transacciones del extracto bancario
+      // Get transactions from bank statement
       const supabaseTransactions = await getTransactionsByBankStatementId(statementId);
       
-      // Convertir las transacciones de Supabase a nuestro formato
+      // Convert transactions from Supabase to our format
       const appTransactions = supabaseTransactions.map(tx => {
-        // IMPORTANTE: Usar la fecha original sin ninguna validación ni normalización
-        // Esto preservará el formato exacto que viene de la base de datos
+        // IMPORTANT: Use the original date without any validation or normalization
+        // This will preserve the exact format coming from the database
         const originalDate = tx.date;
         
-        console.log(`Usando fecha original para transacción ${tx.id}: ${originalDate}`);
+        console.log(`Using original date for transaction ${tx.id}: ${originalDate}`);
         
-        // Verificar si la fecha parece estar en formato MM/DD/YYYY (formato estadounidense)
+        // Check if the date appears to be in MM/DD/YYYY format (US format)
         if (originalDate && typeof originalDate === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(originalDate)) {
-          console.log(`La fecha ${originalDate} está en formato MM/DD/YYYY (formato estadounidense).`);
+          console.log(`The date ${originalDate} is in MM/DD/YYYY format (US format).`);
         }
         
         return {
@@ -321,7 +322,7 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
           category: tx.category,
           project: tx.project,
           comments: tx.comments,
-          commercial: tx.commercial || tx.assigned_to || 'Sin asignar',
+          commercial: tx.commercial || tx.assigned_to || 'Unassigned',
           commercial_id: tx.commercial_id || null,
           assigned_to: tx.assigned_to,
           cardNumber: tx.card_number
@@ -332,7 +333,7 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
       
       // Agrupar transacciones por comercial asignado
       const grouped = appTransactions.reduce<Record<string, Transaction[]>>((acc, transaction) => {
-        const commercial = transaction.assignedTo || 'Sin asignar';
+        const commercial = transaction.assignedTo || 'Unassigned';
         if (!acc[commercial]) {
           acc[commercial] = [];
         }
@@ -343,8 +344,8 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
       setGroupedTransactions(grouped);
       setError(null);
     } catch (err) {
-      console.error('Error al cargar datos:', err);
-      setError('Error al cargar los datos del extracto');
+      console.error('Error loading data:', err);
+      setError('Error loading statement data');
     } finally {
       setLoading(false);
     }
@@ -356,19 +357,19 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
         setLoading(true);
         setError(null);
         
-        // Obtener detalles del extracto bancario
+        // Get bank statement details
         const statementData = await getBankStatementById(statementId);
         if (!statementData) {
-          throw new Error("No se encontró el extracto bancario");
+          throw new Error("Bank statement not found");
         }
         
         const formattedStatement = convertFromSupabaseBankStatement(statementData);
         setStatement(formattedStatement);
         
-        // Obtener transacciones asociadas al extracto
+        // Get transactions associated with the statement
         const supabaseTransactionsData = await getTransactionsByBankStatementId(statementId);
         
-        // Convertir de SupabaseTransaction a Transaction
+        // Convert from SupabaseTransaction to Transaction
         const transactionsData = supabaseTransactionsData.map(tx => {
           // Mapear el estado de Supabase al formato de la aplicación
           let status: 'pending' | 'approved' | 'classified' | 'completed';
@@ -395,7 +396,7 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
             category: tx.category,
             project: tx.project,
             comments: tx.comments,
-            commercial: tx.commercial || tx.assigned_to || 'Sin asignar',
+            commercial: tx.commercial || tx.assigned_to || 'Unassigned',
             commercial_id: tx.commercial_id || null,
             assigned_to: tx.assigned_to,
             cardNumber: tx.card_number
@@ -406,7 +407,7 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
         
         // Agrupar transacciones por comercial
         const grouped = transactionsData.reduce((acc, transaction) => {
-          const commercial = transaction.assigned_to || transaction.assignedTo || 'Sin asignar';
+          const commercial = transaction.assigned_to || transaction.assignedTo || 'Unassigned';
           if (!acc[commercial]) {
             acc[commercial] = [];
           }
@@ -416,11 +417,11 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
         
         setGroupedTransactions(grouped);
         
-        // Cargar usuarios comerciales para el desplegable
+        // Load commercial users for the dropdown
         await loadCommercialUsers();
       } catch (err: any) {
         console.error("Error al cargar datos:", err);
-        setError(err.message || "Error al cargar los datos");
+        setError(err.message || "Error loading data");
       } finally {
         setLoading(false);
       }
@@ -429,10 +430,10 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
     fetchData();
   }, [statementId]);
 
-  // Función para manejar la creación de una nueva transacción
+  // Function to handle creation of a new transaction
   const handleAddTransaction = async (formData: any) => {
     try {
-      // Crear la transacción en Supabase
+      // Create transaction in Supabase
       await createTransaction({
         bank_statement_id: statementId,
         date: formData.date,
@@ -447,40 +448,40 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
         comments: formData.comments
       });
       
-      // Cerrar el diálogo
+      // Close the dialog
       setIsAddDialogOpen(false);
       
-      // Mostrar notificación
+      // Show notification
       toast({
-        title: "Transacción agregada",
-        description: "La transacción ha sido agregada correctamente.",
+        title: "Transaction added",
+        description: "The transaction has been added successfully.",
       });
       
-      // Actualizar datos
+      // Update data
       refreshData();
     } catch (err) {
-      console.error('Error al agregar transacción:', err);
+      console.error('Error adding transaction:', err);
       toast({
         title: "Error",
-        description: "No se pudo agregar la transacción.",
+        description: "Could not add the transaction.",
         variant: "destructive",
       });
     }
   };
 
-  // Función para manejar la edición de una transacción
+  // Function to handle editing a transaction
   const handleEditTransaction = async (formData: any) => {
     if (!selectedTransaction) return;
     
     try {
-      // Actualizar la transacción en Supabase
+      // Update transaction in Supabase
       await updateTransaction(selectedTransaction.id, {
         date: formData.date,
         account: formData.account,
         merchant: formData.merchant,
         amount: formData.amount,
         currency: formData.currency,
-        // Convertir el status de nuestro formato al formato de Supabase
+        // Convert status from our format to Supabase format
         status: selectedTransaction.status === 'pending' ? 'pending' : 
                 selectedTransaction.status === 'approved' ? 'approved' : 'rejected',
         assigned_to: formData.assignedTo,
@@ -489,90 +490,90 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
         comments: formData.comments
       });
       
-      // Cerrar el diálogo
+      // Close the dialog
       setIsEditDialogOpen(false);
       setSelectedTransaction(null);
       
-      // Mostrar notificación
+      // Show notification
       toast({
-        title: "Transacción actualizada",
-        description: "La transacción ha sido actualizada correctamente.",
+        title: "Transaction updated",
+        description: "The transaction has been updated successfully.",
       });
       
-      // Actualizar datos
+      // Update data
       refreshData();
     } catch (err) {
-      console.error('Error al actualizar transacción:', err);
+      console.error('Error updating transaction:', err);
       toast({
         title: "Error",
-        description: "No se pudo actualizar la transacción.",
+        description: "Could not update the transaction.",
         variant: "destructive",
       });
     }
   };
 
-  // Función para manejar la asignación de un usuario comercial a una transacción
+  // Function to handle assigning a commercial user to a transaction
   const handleAssignCommercial = async (transactionId: string, userId: string | null, userName: string | null) => {
     try {
-      // Actualizar la transacción con el usuario comercial asignado
+      // Update transaction with assigned commercial user
       const updatedTransaction = await assignCommercialToTransaction(transactionId, userId, userName);
       
       if (!updatedTransaction) {
-        throw new Error('No se pudo asignar el usuario comercial a la transacción');
+        throw new Error('Could not assign commercial user to the transaction');
       }
       
-      // Actualizar el estado local
+      // Update local state
       await refreshData();
       
       toast({
-        title: "Usuario comercial asignado",
+        title: "Commercial user assigned",
         description: userName 
-          ? `La transacción ha sido asignada a ${userName}` 
-          : "La transacción ha sido desasignada",
+          ? `The transaction has been assigned to ${userName}` 
+          : "The transaction has been unassigned",
       });
     } catch (error) {
-      console.error('Error al asignar usuario comercial:', error);
+      console.error('Error assigning commercial user:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo asignar el usuario comercial a la transacción.",
+        description: "Could not assign commercial user to the transaction.",
       });
     }
   };
   
-  // Función para manejar la asignación masiva de un usuario comercial a múltiples transacciones
+  // Function to handle bulk assignment of a commercial user to multiple transactions
   const handleBulkAssignCommercial = async (transactionIds: string[], userId: string | null, userName: string | null) => {
     try {
       if (transactionIds.length === 0) {
         toast({
           variant: "default",
-          title: "Información",
-          description: "No hay transacciones para asignar en este grupo.",
+          title: "Information",
+          description: "There are no transactions to assign in this group.",
         });
         return;
       }
       
       setLoading(true);
-      console.log(`Intentando asignar ${transactionIds.length} transacciones a ${userName || 'Sin asignar'}`);
+      console.log(`Attempting to assign ${transactionIds.length} transactions to ${userName || 'Unassigned'}`);
       
       const updatedCount = await assignCommercialToMultipleTransactions(transactionIds, userId, userName);
       
       if (updatedCount === 0) {
         toast({
           variant: "destructive",
-          title: "Advertencia",
-          description: "No se pudo asignar ninguna transacción. Intente con menos transacciones o contacte al administrador.",
+          title: "Warning",
+          description: "Could not assign any transactions. Try with fewer transactions or contact the administrator.",
         });
       } else if (updatedCount < transactionIds.length) {
         toast({
           variant: "default",
-          title: "Asignación parcial",
-          description: `Se asignaron ${updatedCount} de ${transactionIds.length} transacciones a ${userName || 'Sin asignar'}. Algunas transacciones no pudieron ser actualizadas.`,
+          title: "Partial assignment",
+          description: `${updatedCount} of ${transactionIds.length} transactions were assigned to ${userName || 'Unassigned'}. Some transactions could not be updated.`,
         });
       } else {
         toast({
-          title: "Éxito",
-          description: `Se asignaron ${updatedCount} transacciones a ${userName || 'Sin asignar'}.`,
+          title: "Success",
+          description: `${updatedCount} transactions assigned to ${userName || 'Unassigned'}.`,
         });
       }
       
@@ -590,43 +591,43 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
     }
   };
 
-  // Función para manejar la eliminación de una transacción
+  // Function to handle deleting a transaction
   const handleDeleteTransaction = async () => {
     if (!selectedTransaction) return;
     
     try {
-      // Eliminar la transacción de Supabase
+      // Delete transaction from Supabase
       await deleteTransaction(selectedTransaction.id);
       
-      // Cerrar el diálogo
+      // Close the dialog
       setIsDeleteDialogOpen(false);
       setSelectedTransaction(null);
       
-      // Mostrar notificación
+      // Show notification
       toast({
-        title: "Transacción eliminada",
-        description: "La transacción ha sido eliminada correctamente.",
+        title: "Transaction deleted",
+        description: "The transaction has been successfully deleted.",
       });
       
-      // Actualizar datos
+      // Update data
       refreshData();
     } catch (err) {
-      console.error('Error al eliminar transacción:', err);
+      console.error('Error deleting transaction:', err);
       toast({
         title: "Error",
-        description: "No se pudo eliminar la transacción.",
+        description: "Could not delete the transaction.",
         variant: "destructive",
       });
     }
   };
 
-  // Función para abrir el diálogo de edición
+  // Function to open the edit dialog
   const openEditDialog = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
     setIsEditDialogOpen(true);
   };
 
-  // Función para abrir el diálogo de eliminación
+  // Function to open the delete dialog
   const openDeleteDialog = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
     setIsDeleteDialogOpen(true);
@@ -636,7 +637,7 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
     refreshData();
   }, [statementId]);
   
-  // Cargar notificaciones cuando se abre el diálogo
+  // Load notifications when dialog opens
   useEffect(() => {
     if (isNotificationsDialogOpen && statement) {
       loadNotifications();
@@ -702,7 +703,7 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
               ) : (
                 <>
                   <Mail className="h-4 w-4" />
-                  Notificar a comerciales
+                  Notify Commercial Users
                 </>
               )}
             </Button>
@@ -713,15 +714,15 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
               onClick={exportClassifiedTransactions}
             >
               <Download className="h-4 w-4" />
-              Exportar Clasificadas
+              Export Classified
             </Button>
           </div>
         </div>
         <div className="flex justify-between items-center">
           <div>
-            <CardTitle>Detalle del Extracto: {statement.fileName}</CardTitle>
+            <CardTitle>Statement Details: {statement.fileName}</CardTitle>
             <CardDescription>
-              Período: {statement.period} | Cargado: {format(new Date(statement.uploadDate), "dd/MM/yyyy")}
+              Period: {statement.period} | Uploaded: {format(new Date(statement.uploadDate), "MM/dd/yyyy")}
             </CardDescription>
           </div>
           {/* El botón de exportación se ha unificado en la parte superior */}
@@ -730,17 +731,17 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
       <CardContent>
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-blue-50 p-4 rounded-lg">
-            <p className="text-sm text-blue-600 font-medium">Total de transacciones</p>
+            <p className="text-sm text-blue-600 font-medium">Total transactions</p>
             <p className="text-2xl font-bold">{statement.transactionCount}</p>
           </div>
           <div className="bg-green-50 p-4 rounded-lg">
-            <p className="text-sm text-green-600 font-medium">Cuentas detectadas</p>
+            <p className="text-sm text-green-600 font-medium">Detected accounts</p>
             <p className="text-2xl font-bold">{statement.accounts.length}</p>
           </div>
           <div className="bg-purple-50 p-4 rounded-lg">
-            <p className="text-sm text-purple-600 font-medium">Importe total</p>
+            <p className="text-sm text-purple-600 font-medium">Total amount</p>
             <p className="text-2xl font-bold">
-              {new Intl.NumberFormat('es-ES', { 
+              {new Intl.NumberFormat('en-US', { 
                 style: 'currency', 
                 currency: 'USD' 
               }).format(transactions.reduce((sum, tx) => sum + tx.amount, 0))}
@@ -750,7 +751,7 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
         
         {transactions.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <p>No hay transacciones disponibles para este extracto</p>
+            <p>No transactions available for this statement</p>
           </div>
         ) : (
           <div className="space-y-8">
@@ -762,22 +763,22 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
                 <div className="bg-gray-100 p-4 flex justify-between items-center">
                   <div>
                     <h3 className="text-lg font-semibold">{commercial}</h3>
-                    <p className="text-sm text-gray-500">{commercialTransactions.length} transacciones</p>
+                    <p className="text-sm text-gray-500">{commercialTransactions.length} transactions</p>
                   </div>
                   <div className="flex items-center gap-4">
                     {/* Desplegable para asignación masiva */}
                     <div className="w-48">
                       <Select
-                        defaultValue={commercial !== 'Sin asignar' ? commercialUsers.find(u => u.name === commercial)?.id || "unassigned" : "unassigned"}
+                        defaultValue={commercial !== 'Unassigned' ? commercialUsers.find(u => u.name === commercial)?.id || "unassigned" : "unassigned"}
                         onValueChange={(value) => {
                           const selectedUser = value === "unassigned" 
                             ? { id: null, name: null } 
                             : commercialUsers.find(user => user.id === value);
                           
-                          // Obtener los IDs de todas las transacciones de este grupo
+                          // Get IDs of all transactions in this group
                           const transactionIds = commercialTransactions.map(tx => tx.id);
                           
-                          // Llamar a la función de asignación masiva
+                          // Call the bulk assignment function
                           handleBulkAssignCommercial(
                             transactionIds,
                             selectedUser?.id || null,
@@ -786,10 +787,10 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
                         }}
                       >
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Asignar a" />
+                          <SelectValue placeholder="Assign to" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="unassigned">Sin asignar</SelectItem>
+                          <SelectItem value="unassigned">Unassigned</SelectItem>
                           {commercialUsers.map((user) => (
                             <SelectItem key={user.id} value={user.id}>
                               {user.name}
@@ -804,18 +805,18 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
                       onClick={() => {
                         setSelectedTransaction(null);
                         // Preseleccionar el comercial al abrir el formulario
-                        setSelectedCommercial(commercial === 'Sin asignar' ? '' : commercial);
+                        setSelectedCommercial(commercial === 'Unassigned' ? '' : commercial);
                         setIsAddDialogOpen(true);
                       }}
                       className="flex items-center gap-1"
                     >
                       <Plus className="h-4 w-4" />
-                      Agregar
+                      Add
                     </Button>
                     <div className="text-right">
                       <p className="text-sm text-gray-500">Total</p>
                       <p className={`font-semibold ${commercialTransactions.reduce((sum, tx) => sum + tx.amount, 0) < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                        {new Intl.NumberFormat('es-ES', { 
+                        {new Intl.NumberFormat('en-US', { 
                           style: 'currency', 
                           currency: 'USD' 
                         }).format(commercialTransactions.reduce((sum, tx) => sum + tx.amount, 0))}
@@ -827,12 +828,12 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Fecha</TableHead>
-                      <TableHead>Cuenta</TableHead>
-                      <TableHead>Concepto</TableHead>
-                      <TableHead className="text-right">Importe</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Account</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -843,14 +844,14 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
                             try {
                               const dateObj = new Date(transaction.date);
                               if (!isNaN(dateObj.getTime())) {
-                                return format(dateObj, "dd/MM/yyyy");
+                                return format(dateObj, "MM/dd/yyyy");
                               } else {
-                                console.warn(`Fecha inválida al formatear: ${transaction.date}`);
-                                return "Fecha inválida";
+                                console.warn(`Invalid date when formatting: ${transaction.date}`);
+                                return "Invalid date";
                               }
                             } catch (error) {
-                              console.error(`Error al formatear fecha: ${transaction.date}`, error);
-                              return "Error de fecha";
+                              console.error(`Error formatting date: ${transaction.date}`, error);
+                              return "Date error";
                             }
                           })()}
                         </TableCell>
@@ -861,7 +862,7 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
                         </TableCell>
                         <TableCell className="font-medium">{transaction.merchant}</TableCell>
                         <TableCell className={`text-right font-mono ${transaction.amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {new Intl.NumberFormat('es-ES', { 
+                          {new Intl.NumberFormat('en-US', { 
                             style: 'currency', 
                             currency: transaction.currency || 'USD' 
                           }).format(transaction.amount)}
@@ -875,10 +876,10 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
                               : "bg-yellow-100 text-yellow-800"
                           }`}>
                             {transaction.status === "classified" 
-                              ? "Clasificado" 
+                              ? "Classified" 
                               : transaction.status === "approved"
-                              ? "Aprobado"
-                              : "Pendiente"}
+                              ? "Approved"
+                              : "Pending"}
                           </span>
                         </TableCell>
 
@@ -886,7 +887,7 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                                <span className="sr-only">Abrir menú</span>
+                                <span className="sr-only">Open menu</span>
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
                                   viewBox="0 0 24 24"
@@ -906,11 +907,11 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => openEditDialog(transaction)}>
                                 <Pencil className="mr-2 h-4 w-4" />
-                                <span>Editar</span>
+                                <span>Edit</span>
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => openDeleteDialog(transaction)} className="text-red-600">
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                <span>Eliminar</span>
+                                <span>Delete</span>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -925,10 +926,10 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
         )}
       </CardContent>
 
-      {/* Diálogos para agregar, editar y eliminar transacciones */}
+      {/* Dialogs for adding, editing and deleting transactions */}
       {statement && (
         <>
-          {/* Diálogo para agregar transacción */}
+          {/* Dialog to add transaction */}
           <TransactionForm
             isOpen={isAddDialogOpen}
             onClose={() => {
@@ -936,12 +937,12 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
               setSelectedCommercial("");
             }}
             onSubmit={handleAddTransaction}
-            title="Agregar transacción"
+            title="Add transaction"
             bankStatementId={statementId}
             preselectedCommercial={selectedCommercial}
           />
 
-          {/* Diálogo para editar transacción */}
+          {/* Dialog to edit transaction */}
           {selectedTransaction && (
             <TransactionForm
               isOpen={isEditDialogOpen}
@@ -951,12 +952,12 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
               }}
               onSubmit={handleEditTransaction}
               initialData={selectedTransaction}
-              title="Editar transacción"
+              title="Edit transaction"
               bankStatementId={statementId}
             />
           )}
 
-          {/* Diálogo para confirmar eliminación */}
+          {/* Dialog to confirm deletion */}
           <DeleteConfirmationDialog
             isOpen={isDeleteDialogOpen}
             onClose={() => {
@@ -964,17 +965,17 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
               setSelectedTransaction(null);
             }}
             onConfirm={handleDeleteTransaction}
-            title="Eliminar transacción"
-            description="¿Estás seguro de que deseas eliminar esta transacción? Esta acción no se puede deshacer."
+            title="Delete transaction"
+            description="Are you sure you want to delete this transaction? This action cannot be undone."
           />
           
           {/* Diálogo para ver notificaciones enviadas */}
           <Dialog open={isNotificationsDialogOpen} onOpenChange={setIsNotificationsDialogOpen}>
             <DialogContent className="max-w-3xl">
               <DialogHeader>
-                <DialogTitle>Notificaciones a Comerciales</DialogTitle>
+                <DialogTitle>Commercial User Notifications</DialogTitle>
                 <DialogDescription>
-                  Historial de notificaciones enviadas para el extracto {statement.period}
+                  Notification history for statement {statement.period}
                 </DialogDescription>
               </DialogHeader>
               
@@ -987,17 +988,17 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Comercial</TableHead>
+                        <TableHead>Commercial User</TableHead>
                         <TableHead>Email</TableHead>
-                        <TableHead>Fecha de envío</TableHead>
-                        <TableHead>Estado</TableHead>
+                        <TableHead>Sent Date</TableHead>
+                        <TableHead>Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {notifications.map((notification) => (
                         <TableRow key={notification.id}>
                           <TableCell className="font-medium">
-                            {notification.commercial?.name || 'Desconocido'}
+                            {notification.commercial?.name || 'Unknown'}
                           </TableCell>
                           <TableCell>{notification.commercial?.email || '-'}</TableCell>
                           <TableCell>{formatDate(notification.sent_at)}</TableCell>
@@ -1006,7 +1007,7 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
                               {notification.status === true ? (
                                 <Badge variant="outline" className="bg-green-100 text-green-800 flex items-center">
                                   <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  Enviado
+                                  Sent
                                 </Badge>
                               ) : (
                                 <Badge variant="outline" className="bg-red-100 text-red-800 flex items-center">
@@ -1023,13 +1024,13 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  No hay notificaciones enviadas para este extracto
+                  No notifications sent for this statement
                 </div>
               )}
               
               <DialogFooter>
                 <Button onClick={() => setIsNotificationsDialogOpen(false)}>
-                  Cerrar
+                  Close
                 </Button>
               </DialogFooter>
             </DialogContent>

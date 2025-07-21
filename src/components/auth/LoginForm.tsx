@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import hemisphereLogo from "@/assets/hemisphere-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,10 +32,13 @@ const LoginForm = () => {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <Card className="w-full max-w-md">
+        <div className="flex justify-center mt-6 mb-2">
+          <img src={hemisphereLogo} alt="HEMISPHERE BRANDS" className="h-16" />
+        </div>
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Iniciar Sesión</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Sign In</CardTitle>
           <CardDescription className="text-center">
-            Ingrese sus credenciales para acceder al sistema
+            Enter your credentials to access the system
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -43,7 +47,7 @@ const LoginForm = () => {
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
-                placeholder="correo@ejemplo.com"
+                placeholder="email@example.com"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -52,9 +56,9 @@ const LoginForm = () => {
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Contraseña</Label>
+                <Label htmlFor="password">Password</Label>
                 <a className="text-sm text-primary-500 hover:underline" href="#">
-                  ¿Olvidó su contraseña?
+                  Forgot your password?
                 </a>
               </div>
               <Input
@@ -69,7 +73,7 @@ const LoginForm = () => {
           </CardContent>
           <CardFooter>
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Iniciando sesión..." : "Iniciar Sesión"}
+              {isSubmitting ? "Signing in..." : "Sign In"}
             </Button>
           </CardFooter>
         </form>
