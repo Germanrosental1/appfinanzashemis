@@ -165,17 +165,17 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link to="/settings">
                         <Settings className="mr-2 h-4 w-4" />
-                        <span>Configuración</span>
+                        <span>Settings</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleLogout}>
                       <LogOut className="mr-2 h-4 w-4" />
-                      <span>Cerrar sesión</span>
+                      <span>Log Out</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
