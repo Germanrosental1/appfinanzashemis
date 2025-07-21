@@ -28,7 +28,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Transaction } from "@/types";
-import { categories } from "@/lib/mockData";
+// Specific categories for classification (alphabetically ordered)
+const categories = [
+  { id: "auto_expenses", name: "Auto expenses" },
+  { id: "auto_expenses_truckers", name: "Auto expenses truckers" },
+  { id: "chicago_show", name: "Chicago Show" },
+  { id: "delivery_freight", name: "Delivery and freight" },
+  { id: "donations", name: "Donations" },
+  { id: "it", name: "IT" },
+  { id: "marketing", name: "Marketing" },
+  { id: "meals", name: "Meals" },
+  { id: "office_expenses", name: "Office expenses" },
+  { id: "operating_expense", name: "Operating expense" },
+  { id: "others", name: "Others" },
+  { id: "samples", name: "Samples" },
+  { id: "telephone_expense", name: "Telephone expense" },
+  { id: "tolls_parking", name: "Tolls & parking" },
+  { id: "tolls_truck", name: "Tolls truck" },
+  { id: "administrative_travel_expenses", name: "Administrative travel expenses" },
+  { id: "operating_travel_expenses", name: "Operating travel expenses" },
+  { id: "warehouse_expense", name: "Warehouse expense" }
+];
 import { format } from "date-fns";
 
 // Validation schema for the form

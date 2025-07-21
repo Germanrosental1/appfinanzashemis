@@ -27,7 +27,7 @@ interface TransactionTableProps {
   onTransactionUpdate?: () => void;
 }
 
-// Categorías específicas para clasificación (ordenadas alfabéticamente)
+// Specific categories for classification (alphabetically ordered)
 const categories = [
   { id: "auto_expenses", name: "Auto expenses" },
   { id: "auto_expenses_truckers", name: "Auto expenses truckers" },
@@ -49,7 +49,7 @@ const categories = [
   { id: "warehouse_expense", name: "Warehouse expense" }
 ];
 
-// Ya no necesitamos proyectos
+// We no longer need projects
 
 const TransactionTable = ({ transactions, onTransactionUpdate }: TransactionTableProps) => {
   const [editedTransactions, setEditedTransactions] = useState<Record<string, Partial<Transaction>>>({});
@@ -61,7 +61,7 @@ const TransactionTable = ({ transactions, onTransactionUpdate }: TransactionTabl
       [transactionId]: {
         ...prev[transactionId],
         [field]: value,
-        // Actualizamos el status a 'approved' cuando se modifica algún campo
+        // Update status to 'approved' when any field is modified
         status: "approved"
       }
     }));
@@ -71,7 +71,7 @@ const TransactionTable = ({ transactions, onTransactionUpdate }: TransactionTabl
     try {
       // Crear un array de promesas para actualizar cada transacción en Supabase
       const updatedPromises = Object.entries(editedTransactions).map(async ([id, updates]) => {
-        // Actualizamos categoría, comentarios y cambiamos el status a 'approved'
+        // Update category, comments and change status to 'approved'
         const { error } = await supabase
           .from('transactions')
           .update({
@@ -89,8 +89,8 @@ const TransactionTable = ({ transactions, onTransactionUpdate }: TransactionTabl
       await Promise.all(updatedPromises);
       
       toast({
-        title: "Clasificaciones guardadas",
-        description: `Se han guardado ${Object.keys(editedTransactions).length} clasificaciones`,
+        title: "Classifications saved",
+        description: `${Object.keys(editedTransactions).length} classifications have been saved`,
         duration: 3000,
       });
       
@@ -102,8 +102,8 @@ const TransactionTable = ({ transactions, onTransactionUpdate }: TransactionTabl
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error al guardar",
-        description: "No se pudieron guardar todas las clasificaciones",
+        title: "Error saving",
+        description: "Could not save all classifications",
       });
       console.error("Error saving transactions:", error);
     }
@@ -111,19 +111,19 @@ const TransactionTable = ({ transactions, onTransactionUpdate }: TransactionTabl
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat("es-ES").format(date);
+    return new Intl.DateTimeFormat("en-US").format(date);
   };
 
   const formatAmount = (amount: number, currency: string) => {
-    return new Intl.NumberFormat("es-ES", {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency,
     }).format(amount);
   };
 
   const isClassified = (transaction: Transaction, editData?: Partial<Transaction>) => {
-    // Consideramos que una transacción está clasificada si tiene status 'approved'
-    // ya sea en los datos originales o en los datos editados
+    // We consider a transaction to be classified if it has status 'approved'
+    // either in the original data or in the edited data
     return (
       transaction.status === "approved" || 
       (editData && editData.status === "approved")
@@ -135,11 +135,11 @@ const TransactionTable = ({ transactions, onTransactionUpdate }: TransactionTabl
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Transacciones a Clasificar</h3>
+        <h3 className="text-lg font-medium">Transactions to Classify</h3>
         {hasChanges && (
           <Button onClick={handleSaveAll}>
             <Check className="mr-2 h-4 w-4" />
-            Guardar Clasificaciones ({Object.keys(editedTransactions).length})
+            Save Classifications ({Object.keys(editedTransactions).length})
           </Button>
         )}
       </div>
@@ -147,14 +147,14 @@ const TransactionTable = ({ transactions, onTransactionUpdate }: TransactionTabl
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Fecha</TableHead>
-              <TableHead>Descripción</TableHead>
-              <TableHead>Cuenta</TableHead>
-              <TableHead>Comercial</TableHead>
-              <TableHead className="text-right">Importe</TableHead>
-              <TableHead>Categoría</TableHead>
-              <TableHead>Comentario</TableHead>
-              <TableHead className="w-10">Estado</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Account</TableHead>
+              <TableHead>Commercial</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Comment</TableHead>
+              <TableHead className="w-10">Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -165,7 +165,7 @@ const TransactionTable = ({ transactions, onTransactionUpdate }: TransactionTabl
                   <TableCell>{formatDate(transaction.date)}</TableCell>
                   <TableCell className="font-medium">{transaction.merchant}</TableCell>
                   <TableCell>{transaction.account}</TableCell>
-                  <TableCell>{transaction.commercial || 'Desconocido'}</TableCell>
+                  <TableCell>{transaction.commercial || 'Unknown'}</TableCell>
                   <TableCell className="text-right font-mono">
                     {formatAmount(transaction.amount, transaction.currency)}
                   </TableCell>
@@ -175,7 +175,7 @@ const TransactionTable = ({ transactions, onTransactionUpdate }: TransactionTabl
                       onValueChange={(value) => handleChange(transaction.id, "category", value)}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Seleccionar..." />
+                        <SelectValue placeholder="Select..." />
                       </SelectTrigger>
                       <SelectContent>
                         {categories.map((category) => (
@@ -189,16 +189,16 @@ const TransactionTable = ({ transactions, onTransactionUpdate }: TransactionTabl
                   {/* Columna de proyecto eliminada */}
                   <TableCell>
                     <Input
-                      placeholder="Añadir comentario (opcional)"
+                      placeholder="Add comment (optional)"
                       value={editData?.comments ?? transaction.comments ?? ""}
                       onChange={(e) => handleChange(transaction.id, "comments", e.target.value)}
                     />
                   </TableCell>
                   <TableCell>
                     {isClassified(transaction, editData) ? (
-                      <span className="flex h-2 w-2 rounded-full bg-green-500" title="Clasificado"></span>
+                      <span className="flex h-2 w-2 rounded-full bg-green-500" title="Classified"></span>
                     ) : (
-                      <span className="flex h-2 w-2 rounded-full bg-amber-500" title="Pendiente"></span>
+                      <span className="flex h-2 w-2 rounded-full bg-amber-500" title="Pending"></span>
                     )}
                   </TableCell>
                 </TableRow>

@@ -16,7 +16,7 @@ const CommercialTransactions = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Función para obtener transacciones del comercial desde Supabase
+  // Function to get transactions for the commercial user from Supabase
   const fetchTransactions = async () => {
     if (!user || !user.name) {
       setLoading(false);
@@ -26,8 +26,8 @@ const CommercialTransactions = () => {
     try {
       setLoading(true);
       
-      // Obtener transacciones pendientes asignadas al comercial por su nombre
-      // Buscamos tanto en assigned_to como en el campo commercial y filtramos por status=pending
+      // Get pending transactions assigned to the commercial user by name
+      // We search in both assigned_to and commercial fields and filter by status=pending
       const { data, error } = await supabase
         .from('transactions')
         .select('*')
@@ -35,27 +35,27 @@ const CommercialTransactions = () => {
         .eq('status', 'pending') // Solo transacciones pendientes
         .order('date', { ascending: false });
         
-      console.log('Buscando transacciones para comercial:', user.name);
+      console.log('Searching transactions for commercial user:', user.name);
       
       if (error) {
-        console.error('Error al obtener transacciones:', error);
+        console.error('Error retrieving transactions:', error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: "No se pudieron cargar las transacciones"
+          description: "Could not load transactions"
         });
         return;
       }
       
-      // Formatear las transacciones al formato esperado por el componente
+      // Format transactions to the expected format for the component
       const formattedTransactions: Transaction[] = data.map(t => {
-        console.log('Transacción encontrada:', t);
+        console.log('Transaction found:', t);
         return {
           id: t.id,
           date: t.date,
           description: t.description,
           amount: t.amount,
-          currency: t.currency || 'USD', // Cambiado a USD como predeterminado
+          currency: t.currency || 'USD', // Changed to USD as default
           category: t.category || '',
           subcategory: t.subcategory || '',
           comments: t.comments || '',
@@ -63,19 +63,19 @@ const CommercialTransactions = () => {
           assignedTo: t.assigned_to || '',
           account: t.account || '',
           merchant: t.merchant || '',
-          commercial: t.commercial || '', // Incluir el campo commercial
-          cardNumber: t.card_number || '' // Incluir el campo cardNumber
+          commercial: t.commercial || '', // Include commercial field
+          cardNumber: t.card_number || '' // Include cardNumber field
         };
       });
       
-      // Usar todas las transacciones sin filtrar por mes
+      // Use all transactions without filtering by month
       setTransactions(formattedTransactions);
     } catch (err) {
-      console.error('Error inesperado:', err);
+      console.error('Unexpected error:', err);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Ocurrió un error al procesar las transacciones"
+        description: "An error occurred while processing transactions"
       });
     } finally {
       setLoading(false);
@@ -105,7 +105,7 @@ const CommercialTransactions = () => {
       <AppLayout requireRole="commercial">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin mr-2" />
-          <p>Cargando transacciones...</p>
+          <p>Loading transactions...</p>
         </div>
       </AppLayout>
     );
@@ -117,12 +117,12 @@ const CommercialTransactions = () => {
     <AppLayout requireRole="commercial">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Clasificación de Transacciones</h1>
+          <h1 className="text-2xl font-semibold">Transaction Classification</h1>
         </div>
         
         <Card>
           <CardHeader>
-            <CardTitle>Mis Transacciones Pendientes de Clasificar</CardTitle>
+            <CardTitle>My Pending Transactions to Classify</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <ClassificationProgress stats={stats} />
@@ -134,8 +134,8 @@ const CommercialTransactions = () => {
               />
             ) : (
               <div className="text-center py-8">
-                <p className="text-gray-500">No hay transacciones pendientes de clasificar asignadas a su cuenta.</p>
-                <p className="text-gray-500 mt-2">Si cree que esto es un error, contacte con el departamento financiero.</p>
+                <p className="text-gray-500">There are no pending transactions to classify assigned to your account.</p>
+                <p className="text-gray-500 mt-2">If you believe this is an error, please contact the finance department.</p>
               </div>
             )}
           </CardContent>
