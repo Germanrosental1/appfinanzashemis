@@ -34,7 +34,7 @@ const ProtectedRoute = ({ children, requiredRole, allowedRoles }: ProtectedRoute
   
   // Si está cargando, mostrar un indicador de carga
   if (loading) {
-    return <div>Cargando...</div>;
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
   
   // Si no hay usuario autenticado, redirigir a login
@@ -42,14 +42,26 @@ const ProtectedRoute = ({ children, requiredRole, allowedRoles }: ProtectedRoute
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
-  // Verificar si se requiere un rol específico
-  if (requiredRole && user.role !== requiredRole) {
-    return <div>Acceso denegado. No tienes permisos para ver esta página.</div>;
-  }
+  // Verificar si se requiere un rol específico o roles permitidos
+  const hasRequiredRole = requiredRole ? user.role === requiredRole : true;
+  const hasAllowedRole = allowedRoles ? allowedRoles.includes(user.role) : true;
   
-  // Verificar si el usuario tiene alguno de los roles permitidos
-  if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    return <div>Acceso denegado. No tienes permisos para ver esta página.</div>;
+  if ((requiredRole && !hasRequiredRole) || (allowedRoles && allowedRoles.length > 0 && !hasAllowedRole)) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen p-4">
+        <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+        <p className="mb-6 text-center">You don't have permission to view this page.</p>
+        <p className="mb-6 text-center text-sm text-gray-500">
+          Current role: {user.role}, Required role: {requiredRole || allowedRoles?.join(' or ')}
+        </p>
+        <button 
+          onClick={() => window.location.href = '/'}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Return to Home
+        </button>
+      </div>
+    );
   }
   
   // Si todo está bien, mostrar el contenido protegido
@@ -58,13 +70,54 @@ const ProtectedRoute = ({ children, requiredRole, allowedRoles }: ProtectedRoute
 
 // Componente para redirección basada en rol
 const RoleBasedRedirect = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const location = useLocation();
   
-  if (user?.role === 'commercial') {
-    return <Navigate to="/commercial/transactions" replace />;
+  console.log('RoleBasedRedirect - Current user:', user);
+  console.log('RoleBasedRedirect - Current location:', location.pathname);
+  
+  // Si está cargando, mostrar un indicador de carga
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p>Loading user information...</p>
+      </div>
+    );
   }
   
-  return <Navigate to="/finance/dashboard" replace />;
+  // Si no hay usuario, redirigir al login
+  if (!user) {
+    console.log('RoleBasedRedirect - No user, redirecting to login');
+    return <Navigate to="/login" replace />;
+  }
+  
+  console.log('RoleBasedRedirect - User role:', user.role);
+  
+  // Redirigir según el rol
+  if (user.role === 'commercial') {
+    console.log('RoleBasedRedirect - Commercial user, redirecting to /commercial/transactions');
+    return <Navigate to="/commercial/transactions" replace />;
+  } else if (user.role === 'admin') {
+    console.log('RoleBasedRedirect - Admin user, redirecting to /finance/dashboard');
+    return <Navigate to="/finance/dashboard" replace />;
+  } else if (user.role === 'finance') {
+    console.log('RoleBasedRedirect - Finance user, redirecting to /finance/dashboard');
+    return <Navigate to="/finance/dashboard" replace />;
+  }
+  
+  // Si el rol no es reconocido, mostrar un mensaje de error
+  return (
+    <div className="flex flex-col items-center justify-center h-screen p-4">
+      <h1 className="text-2xl font-bold text-red-600 mb-4">Invalid Role</h1>
+      <p className="mb-6 text-center">Your user account has an invalid role: {user.role}</p>
+      <button 
+        onClick={() => window.location.href = '/login'}
+        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+      >
+        Return to Login
+      </button>
+    </div>
+  );
 };
 
 const App = () => (

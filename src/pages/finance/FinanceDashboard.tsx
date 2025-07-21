@@ -54,16 +54,16 @@ const FinanceDashboard = () => {
 
   if (!metrics) {
     return (
-      <AppLayout requireRole="finance">
+      <AppLayout>
         <div className="flex items-center justify-center h-64">
-          <p>Cargando datos del dashboard...</p>
+          <p>Loading dashboard data...</p>
         </div>
       </AppLayout>
     );
   }
 
   return (
-    <AppLayout requireRole="finance">
+    <AppLayout>
       <div className="space-y-6 px-6 py-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">Financial Dashboard</h1>

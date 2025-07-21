@@ -35,21 +35,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const supabaseUser = await getCurrentUser().catch(() => null);
         
         if (supabaseUser) {
+          console.log('User authenticated:', supabaseUser);
+          console.log('User metadata:', supabaseUser.user_metadata);
+          
+          // Asegurar que el rol sea uno de los valores permitidos
+          const validRoles = ['admin', 'finance', 'commercial'];
+          let userRole = supabaseUser.user_metadata?.role || 'finance';
+          
+          if (!validRoles.includes(userRole)) {
+            console.warn(`Invalid role detected: ${userRole}, defaulting to 'finance'`);
+            userRole = 'finance';
+          }
+          
           // Convertir el usuario de Supabase al formato de nuestra aplicación
           const appUser: User = {
             id: supabaseUser.id,
             email: supabaseUser.email || '',
-            name: supabaseUser.user_metadata?.name || 'Usuario',
-            role: supabaseUser.user_metadata?.role || 'finance',
+            name: supabaseUser.user_metadata?.name || 'User',
+            role: userRole as 'admin' | 'finance' | 'commercial',
           };
           
+          console.log('App user created:', appUser);
           setUser(appUser);
         } else {
           // No hay usuario autenticado
+          console.log('No authenticated user found');
           setUser(null);
         }
       } catch (error) {
-        console.error('Error al verificar usuario:', error);
+        console.error('Error checking user authentication:', error);
         setUser(null);
       } finally {
         setLoading(false);
@@ -62,28 +76,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setLoading(true);
+      console.log('Attempting login for:', email);
       const { user: supabaseUser } = await signIn(email, password);
       
       if (supabaseUser) {
+        console.log('Login successful for user:', supabaseUser.id);
+        console.log('User metadata:', supabaseUser.user_metadata);
+        
+        // Asegurar que el rol sea uno de los valores permitidos
+        const validRoles = ['admin', 'finance', 'commercial'];
+        let userRole = supabaseUser.user_metadata?.role || 'finance';
+        
+        if (!validRoles.includes(userRole)) {
+          console.warn(`Invalid role detected: ${userRole}, defaulting to 'finance'`);
+          userRole = 'finance';
+        }
+        
         // Convertir el usuario de Supabase al formato de nuestra aplicación
         const appUser: User = {
           id: supabaseUser.id,
           email: supabaseUser.email || '',
-          name: supabaseUser.user_metadata?.name || 'Usuario',
-          role: supabaseUser.user_metadata?.role || 'finance',
+          name: supabaseUser.user_metadata?.name || 'User',
+          role: userRole as 'admin' | 'finance' | 'commercial',
         };
         
+        console.log('App user created:', appUser);
         setUser(appUser);
         toast({
-          title: "Inicio de sesión exitoso",
-          description: `Bienvenido, ${appUser.name}`,
+          title: "Login Successful",
+          description: `Welcome, ${appUser.name}`,
         });
         return true;
       } else {
+        console.log('Login failed: No user returned');
         toast({
           variant: "destructive",
-          title: "Error de inicio de sesión",
-          description: "Email o contraseña incorrecta",
+          title: "Login Error",
+          description: "Incorrect email or password",
         });
         return false;
       }
@@ -91,8 +120,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Login error:', error);
       toast({
         variant: "destructive",
-        title: "Error de inicio de sesión",
-        description: "Ha ocurrido un error durante el inicio de sesión",
+        title: "Login Error",
+        description: "An error occurred during login",
       });
       return false;
     } finally {
@@ -103,10 +132,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithToken = async (token: string): Promise<boolean> => {
     try {
       setLoading(true);
+      console.log('Attempting to login with token');
       // Validar el token de acceso comercial
       const commercialName = await validateCommercialAccessToken(token);
       
       if (commercialName) {
+        console.log('Token validated successfully for commercial user:', commercialName);
         // Crear un usuario temporal para el comercial
         const commercialUser: User = {
           id: `commercial-${Date.now()}`,
@@ -115,26 +146,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: 'commercial',
         };
         
+        console.log('Commercial user created:', commercialUser);
         setUser(commercialUser);
         toast({
-          title: "Acceso temporal concedido",
-          description: `Bienvenido, ${commercialName}`,
+          title: "Temporary Access Granted",
+          description: `Welcome, ${commercialName}`,
         });
         return true;
       }
       
+      console.log('Token validation failed: Invalid or expired token');
       toast({
         variant: "destructive",
-        title: "Enlace no válido",
-        description: "El enlace de acceso ha caducado o no es válido.",
+        title: "Invalid Link",
+        description: "The access link has expired or is invalid.",
       });
       return false;
     } catch (error) {
-      console.error('Error al validar token:', error);
+      console.error('Error validating token:', error);
       toast({
         variant: "destructive",
-        title: "Error de acceso",
-        description: "Ha ocurrido un error al validar el enlace de acceso.",
+        title: "Access Error",
+        description: "An error occurred while validating the access link.",
       });
       return false;
     } finally {
@@ -144,18 +177,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      console.log('Attempting to logout');
       await signOut();
       setUser(null);
+      console.log('User logged out successfully');
       toast({
-        title: "Sesión cerrada",
-        description: "Has cerrado sesión correctamente",
+        title: "Logged Out",
+        description: "You have been successfully logged out",
       });
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
+      console.error('Error during logout:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Ha ocurrido un error al cerrar sesión",
+        description: "An error occurred while logging out",
       });
     }
   };
