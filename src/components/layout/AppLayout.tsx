@@ -46,7 +46,7 @@ interface AppLayoutProps {
   requireRole?: 'admin' | 'finance' | 'commercial';
 }
 
-const AppLayout = ({ children }: AppLayoutProps) => {
+const AppLayout = ({ children, requireRole }: AppLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -62,6 +62,21 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     navigate('/login');
   };
   
+  // Verificar si el usuario tiene el rol requerido
+  if (requireRole && user?.role !== requireRole) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center p-8 max-w-md">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+          <p className="mb-6">You don't have permission to view this page.</p>
+          <Button onClick={() => navigate('/')} variant="outline">
+            Return to Home
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
@@ -69,7 +84,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         <Sidebar>
           <SidebarHeader>
             <div className="flex items-center justify-center py-4">
-              <img src={hemisphereLogo} alt="HEMISPHERE BRANDS" className="h-10" />
+              <img src={hemisphereLogo} alt="Hemisphere Finance" className="h-10" />
             </div>
           </SidebarHeader>
           
@@ -190,7 +205,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           
           {/* Footer */}
           <footer className="border-t py-4 px-6 text-center text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} HEMISPHERE BRANDS. All rights reserved.
+            &copy; {new Date().getFullYear()} Hemisphere Finance. All rights reserved.
           </footer>
         </div>
       </div>
