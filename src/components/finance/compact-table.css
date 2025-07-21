@@ -1,0 +1,100 @@
+/* Estilos para tablas compactas */
+.compact-table th,
+.compact-table td {
+  padding: 0.5rem !important;
+  font-size: 0.875rem;
+}
+
+/* Reducir el espacio entre celdas */
+.compact-table tr {
+  height: auto !important;
+}
+
+/* Estilos para badges más compactos */
+.compact-table [class*="badge"] {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+  height: auto;
+}
+
+/* Estilos para botones más compactos */
+.compact-table button {
+  height: 1.75rem;
+  min-height: 1.75rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  font-size: 0.75rem;
+}
+
+/* Asegurar que el texto truncado tenga tooltip */
+.compact-table .truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Ensure table doesn't overflow its container */
+.compact-table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* Ensure the table takes up full width but doesn't force horizontal scroll */
+.compact-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* Column widths for better space distribution */
+.compact-table .col-file {
+  width: 25%;
+}
+
+.compact-table .col-date {
+  width: 12%;
+}
+
+.compact-table .col-trans {
+  width: 10%;
+}
+
+.compact-table .col-accounts {
+  width: 15%;
+}
+
+.compact-table .col-status {
+  width: 13%;
+}
+
+.compact-table .col-actions {
+  width: 25%;
+}
+
+/* Responsive styles for different screen sizes */
+@media (max-width: 1200px) {
+  .compact-table .sr-md\:inline {
+    display: none;
+  }
+  
+  .compact-table .col-date {
+    width: 10%;
+  }
+  
+  .compact-table .col-actions {
+    width: 20%;
+  }
+}
+
+/* Estilos para pantallas muy pequeñas */
+@media (max-width: 768px) {
+  .compact-table th,
+  .compact-table td {
+    padding: 0.25rem !important;
+    font-size: 0.75rem;
+  }
+  
+  .compact-table button {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+}
