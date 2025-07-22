@@ -4,8 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 // Initialize Supabase client with anonymous key
 // We use the anonymous key because we're using signUp which works with normal permissions
 const supabase = createClient(
-  process.env.VITE_SUPABASE_URL,
-  process.env.VITE_SUPABASE_ANON_KEY
+  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY
 );
 
 export default async function handler(req, res) {
