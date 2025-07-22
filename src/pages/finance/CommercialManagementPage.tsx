@@ -27,8 +27,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// Static list of commercial users
-const COMMERCIAL_NAMES = [
+// Static list of card holder users
+const CARD_HOLDER_NAMES = [
   'Allia Klipp',
   'Danielle Bury',
   'Denise Urbach',
@@ -84,10 +84,10 @@ const CommercialManagementPage: React.FC = () => {
       // Verify if all commercial users from the static list exist in the database
       // Si no existen, crearlos con email vacío
       const existingNames = data?.map(c => c.name) || [];
-      const missingNames = COMMERCIAL_NAMES.filter(name => !existingNames.includes(name));
+      const missingNames = CARD_HOLDER_NAMES.filter(name => !existingNames.includes(name));
 
       if (missingNames.length > 0) {
-        console.log(`Creating ${missingNames.length} missing commercial users...`);
+        console.log(`Creating ${missingNames.length} missing card holder users...`);
         
         // Create missing commercial users
         const newCommercials = missingNames.map(name => ({
@@ -101,11 +101,11 @@ const CommercialManagementPage: React.FC = () => {
           .insert(newCommercials);
 
         if (insertError) {
-          console.error('Error creating missing commercial users:', insertError);
+          console.error('Error creating missing card holder users:', insertError);
           toast({
             variant: "destructive",
             title: "Error",
-            description: "Could not create all required commercial users",
+            description: "Could not create all required card holder users",
           });
         } else {
           // Reload commercial users after inserting new ones
@@ -118,8 +118,8 @@ const CommercialManagementPage: React.FC = () => {
           
           setCommercials(updatedData || []);
           toast({
-            title: "Commercial users initialized",
-            description: `${missingNames.length} missing commercial users have been created`,
+            title: "Card holder users initialized",
+            description: `${missingNames.length} missing card holder users have been created`,
           });
         }
       } else {
@@ -165,7 +165,7 @@ const CommercialManagementPage: React.FC = () => {
       ));
       
       toast({
-        title: "Commercial user updated",
+        title: "Card Holder user updated",
         description: `${currentCommercial.name}'s information has been updated`,
       });
       
@@ -236,13 +236,13 @@ const CommercialManagementPage: React.FC = () => {
     <AppLayout>
       <div className="flex flex-col w-full h-full">
         <div className="flex justify-between items-center p-6">
-          <h1 className="text-3xl font-bold">Commercial Users Management</h1>
+          <h1 className="text-3xl font-bold">Card Holder Users Management</h1>
         </div>
         
         <div className="w-full px-6 pb-6">
           <Card className="w-full overflow-hidden">
             <CardHeader>
-              <CardTitle>Commercial Users List</CardTitle>
+              <CardTitle>Card Holder Users List</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
             {loading && (
@@ -305,7 +305,7 @@ const CommercialManagementPage: React.FC = () => {
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Edit Commercial User Email</DialogTitle>
+              <DialogTitle>Edit Card Holder User Email</DialogTitle>
               <DialogDescription>
                 Update email for {currentCommercial?.name}.
               </DialogDescription>
@@ -344,7 +344,7 @@ const CommercialManagementPage: React.FC = () => {
                     isActive: checked
                   })}
                 />
-                <Label htmlFor="isActive">Active commercial user</Label>
+                <Label htmlFor="isActive">Active card holder user</Label>
               </div>
             </div>
             

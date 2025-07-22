@@ -47,7 +47,7 @@ const CommercialUserManager: React.FC = () => {
       
       // If there are no users, show a message
       if (!data.users || data.users.length === 0) {
-        console.log('No commercial users found');
+        console.log('No card holder users found');
       }
     } catch (error: any) {
       toast.error(`Error loading users: ${error.message}`);
@@ -127,7 +127,7 @@ const CommercialUserManager: React.FC = () => {
       // Clear the form
       setNewUser({ email: '', name: '' });
       
-      toast.success(`Commercial user created: ${newUser.email}`);
+      toast.success(`Card holder user created: ${newUser.email}`);
       
       // Save the password to display it
       setNewPassword(data.password);
@@ -238,7 +238,7 @@ const CommercialUserManager: React.FC = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Commercial Users Management</CardTitle>
+          <CardTitle>Card Holder Users Management</CardTitle>
           <div className="flex gap-2">
             <Button 
               variant="outline" 
@@ -259,7 +259,7 @@ const CommercialUserManager: React.FC = () => {
         <CardContent>
           {showForm && (
             <form onSubmit={handleCreateUser} className="mb-6 p-4 border rounded-md">
-              <h3 className="text-lg font-medium mb-4">Create New Commercial User</h3>
+              <h3 className="text-lg font-medium mb-4">Create New Card Holder User</h3>
               <div className="grid gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="name">Name</Label>
@@ -267,7 +267,7 @@ const CommercialUserManager: React.FC = () => {
                     id="name"
                     value={newUser.name}
                     onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                    placeholder="Commercial user name"
+                    placeholder="Card holder name"
                     required
                   />
                 </div>
@@ -328,7 +328,7 @@ const CommercialUserManager: React.FC = () => {
                 {users.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
-                      {loading ? 'Loading users...' : 'No commercial users registered'}
+                      {loading ? 'Loading users...' : 'No card holder users registered'}
                     </TableCell>
                   </TableRow>
                 ) : (

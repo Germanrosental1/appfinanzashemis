@@ -35,7 +35,7 @@ const CommercialTransactions = () => {
         .eq('status', 'pending') // Solo transacciones pendientes
         .order('date', { ascending: false });
         
-      console.log('Searching transactions for commercial user:', user.name);
+      console.log('Searching transactions for card holder user:', user.name);
       
       if (error) {
         console.error('Error retrieving transactions:', error);
@@ -63,7 +63,7 @@ const CommercialTransactions = () => {
           assignedTo: t.assigned_to || '',
           account: t.account || '',
           merchant: t.merchant || '',
-          commercial: t.commercial || '', // Include commercial field
+          commercial: t.commercial || '', // Include card holder field
           cardNumber: t.card_number || '' // Include cardNumber field
         };
       });

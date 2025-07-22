@@ -16,13 +16,13 @@ const CommercialUsersPage: React.FC = () => {
   return (
     <AppLayout>
       <Helmet>
-        <title>Commercial Users Management | HEMISPHERE BRANDS</title>
+        <title>Card Holder Users Management | HEMISPHERE BRANDS</title>
       </Helmet>
       
       <div className="container mx-auto py-8">
-        <h1 className="text-2xl font-bold mb-6">Commercial Users Management</h1>
+        <h1 className="text-2xl font-bold mb-6">Card Holder Users Management</h1>
         <p className="text-gray-600 mb-6">
-          Create and manage user accounts for your commercial users. Each commercial user will have access
+          Create and manage user accounts for your card holder users. Each card holder user will have access
           only to their own transactions and data.
         </p>
         

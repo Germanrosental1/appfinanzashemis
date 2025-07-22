@@ -43,7 +43,7 @@ import {
 
 interface AppLayoutProps {
   children: ReactNode;
-  requireRole?: 'admin' | 'finance' | 'commercial';
+  requireRole?: 'admin' | 'finance' | 'commercial'; // Note: 'commercial' role represents Card Holders
 }
 
 const AppLayout = ({ children, requireRole }: AppLayoutProps) => {
@@ -131,7 +131,7 @@ const AppLayout = ({ children, requireRole }: AppLayoutProps) => {
                   >
                     <Link to="/finance/commercials">
                       <Mail className="size-4" />
-                      <span>Commercial Notifications</span>
+                      <span>Notifications</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -146,7 +146,7 @@ const AppLayout = ({ children, requireRole }: AppLayoutProps) => {
                   >
                     <Link to="/admin/commercial-users">
                       <User className="size-4" />
-                      <span>Commercial Users</span>
+                      <span>Card Holders Users</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

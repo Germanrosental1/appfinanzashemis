@@ -208,9 +208,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               name="assignedTo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Assigned to (Commercial)</FormLabel>
+                  <FormLabel>Assigned to</FormLabel>
                   <FormControl>
-                    <Input placeholder="Commercial name" {...field} />
+                    <Input placeholder="Name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -703,7 +703,7 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
               ) : (
                 <>
                   <Mail className="h-4 w-4" />
-                  Notify Commercial Users
+                  Notify Card Holders Users
                 </>
               )}
             </Button>
