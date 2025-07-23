@@ -21,6 +21,7 @@ export const CARD_TO_COMMERCIAL_MAP: Record<string, string> = {
   '0983': 'Suzanne Strazzeri',
   '8012': 'Tara Sarris',
   '4641': 'Timothy Hawver Scott',
+  '4216': 'Alexis Rosenthal',
   '1785': 'SYSTEM' // Hemisphere Trading O (pagos automáticos) - marcado como SYSTEM para filtrar
 };
 

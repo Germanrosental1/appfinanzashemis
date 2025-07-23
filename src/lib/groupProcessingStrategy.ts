@@ -21,6 +21,7 @@ const getCardMapForCommercials = (): Record<string, string> => {
     'Suzanne Strazzeri': 'XXXX-XXXX-XXXX-0983',
     'Tara Sarris': 'XXXX-XXXX-XXXX-8012',
     'Timothy Hawver Scott': 'XXXX-XXXX-XXXX-4641',
+    'Alexis Rosenthal': 'XXXX-XXXX-XXXX-4216',
     'Hemisphere Trading O': 'XXXX-XXXX-XXXX-0000'
   };
 };
@@ -82,6 +83,7 @@ const commercialGroups = [
     { name: "Suzanne Strazzeri", cardNumber: "XXXX-XXXX-XXXX-0983" },
     { name: "Tara Sarris", cardNumber: "XXXX-XXXX-XXXX-8012" },
     { name: "Timothy Hawver Scott", cardNumber: "XXXX-XXXX-XXXX-4641" },
+    { name: "Alexis Rosenthal", cardNumber: "XXXX-XXXX-XXXX-4216" },
     { name: "Regla Especial", cardNumber: "Ignorar Hemisphere Trading O" }
   ]
 ];
@@ -1023,7 +1025,8 @@ async function procesarTextoCompleto(pdfText: string): Promise<Transaction[]> {
         'Sharon Pinto',
         'Suzanne Strazzeri',
         'Tara Sarris',
-        'Timothy Hawver Scott'
+        'Timothy Hawver Scott',
+        'Alexis Rosenthal'
       ];
     }
     

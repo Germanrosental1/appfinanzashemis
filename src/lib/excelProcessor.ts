@@ -90,7 +90,8 @@ const CARD_TO_COMMERCIAL_MAP: Record<string, string> = {
   '2535': 'Sharon Pinto',
   '0983': 'Suzanne Strazzeri',
   '8012': 'Tara Sarris',
-  '4641': 'Timothy Hawver Scott'
+  '4641': 'Timothy Hawver Scott',
+  '4216': 'Alexis Rosenthal'
 };
 
 // Función para extraer el número de tarjeta de un texto

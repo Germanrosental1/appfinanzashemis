@@ -729,6 +729,23 @@ const StatementTransactionsView: React.FC<StatementTransactionsViewProps> = ({
         </div>
       </CardHeader>
       <CardContent>
+        {/* Progress bar for classified transactions */}
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-2">
+            <p className="text-sm font-medium">Transaction Classification Progress</p>
+            <p className="text-sm font-medium">
+              {transactions.filter(tx => tx.status !== 'pending').length} / {transactions.length} classified
+              ({transactions.length > 0 ? Math.round((transactions.filter(tx => tx.status !== 'pending').length / transactions.length) * 100) : 0}%)
+            </p>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div 
+              className="bg-green-600 h-2.5 rounded-full" 
+              style={{ width: `${transactions.length > 0 ? (transactions.filter(tx => tx.status !== 'pending').length / transactions.length) * 100 : 0}%` }}
+            ></div>
+          </div>
+        </div>
+        
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-blue-50 p-4 rounded-lg">
             <p className="text-sm text-blue-600 font-medium">Total transactions</p>
