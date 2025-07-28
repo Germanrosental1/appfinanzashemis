@@ -33,6 +33,7 @@ const categories = [
   { id: "auto_expenses", name: "Auto expenses" },
   { id: "auto_expenses_truckers", name: "Auto expenses truckers" },
   { id: "chicago_show", name: "Chicago Show" },
+  { id: "commercial_travel_expenses", name: "Commercial travel expenses" },
   { id: "delivery_freight", name: "Delivery and freight" },
   { id: "donations", name: "Donations" },
   { id: "it", name: "IT" },
