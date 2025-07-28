@@ -161,10 +161,10 @@ export const sendTokenEmail = async (
 };
 
 /**
- * Envía una notificación por email a un comercial (sin token)
+ * Envía una notificación por email a un comercial usando la plantilla fija
  * @param email Email del comercial
- * @param name Nombre del comercial
- * @param period Período del extracto
+ * @param name Nombre del comercial (ya no se usa en la plantilla fija)
+ * @param period Período del extracto (ya no se usa en la plantilla fija)
  * @returns Resultado de la operación
  */
 export const sendCommercialNotification = async (
@@ -177,13 +177,14 @@ export const sendCommercialNotification = async (
     const baseUrl = window.location.origin;
     const appUrl = `${baseUrl}/commercial/transactions`;
     
-    // Enviar email con enlace directo a la plataforma
+    // Enviar email con la plantilla fija y enlace directo a la plataforma
+    // La plantilla ya contiene el texto fijo: "Hello Team, You have been granted access..."
     const result = await sendCommercialAccessToken(
       email,
-      name,
+      name, // Este parámetro ya no se usa en la plantilla fija
       appUrl,
-      period,
-      true // Indicar que es una notificación sin token
+      period, // Este parámetro ya no se usa en la plantilla fija
+      true // Mantener por compatibilidad
     );
     
     return result;
@@ -327,15 +328,23 @@ export const getCommercialsWithTransactionsInStatement = async (statementId: str
       throw commercialsError;
     }
     
-    return commercials || [];
+    // Filtrar los comerciales que tienen un email válido
+    const validCommercials = (commercials || []).filter(commercial => {
+      const hasValidEmail = commercial.email && commercial.email.includes('@');
+      if (!hasValidEmail) {
+        console.warn(`El comercial ${commercial.name} no tiene un email válido configurado`);
+      }
+      return hasValidEmail;
+    });
+    
+    return validCommercials;
   } catch (error) {
     console.error('Error al identificar comerciales con transacciones:', error);
     throw error;
   }
 };
-
 /**
- * Notifica a los comerciales que tienen transacciones en un extracto bancario
+ * Notifica a todos los comerciales que tienen transacciones en un extracto bancario
  * @param statement Extracto bancario
  * @returns Resultado de la operación con contadores
  */
@@ -593,110 +602,57 @@ export const notifyAllCommercials = async (statement: BankStatement): Promise<{
   success: number;
   failed: number;
 }> => {
-  // Obtener comerciales con transacciones en este extracto
+  // MODIFICACIÓN TEMPORAL: Solo enviar a un correo específico para pruebas
+  const testEmail = "german.rosental0@gmail.com";
+  console.log(`MODO PRUEBA: Enviando solo a ${testEmail}`);
+  
+  // Obtener comerciales con transacciones en este extracto (para mantener el conteo)
   const commercials = await getCommercialsWithTransactionsInStatement(statement.id);
   
-  if (commercials.length === 0) {
-    return { total: 0, success: 0, failed: 0 };
-  }
-  
+  // Inicializar contadores
   let successCount = 0;
   let failedCount = 0;
   
-  // Buscar usuarios comerciales en la autenticación de Supabase
-  const { data: authUsers, error: authError } = await supabase
-    .from('users')
-    .select('*')
-    .eq('role', 'commercial');
-  
-  if (authError) {
-    console.error('Error al obtener usuarios comerciales:', authError);
-    return { 
-      total: commercials.length, 
-      success: 0, 
-      failed: commercials.length 
-    };
-  }
-  
-  // Crear un mapa de nombres de comerciales a usuarios
-  const commercialUserMap = new Map();
-  authUsers?.forEach(user => {
-    if (user.name) {
-      // Guardar el usuario tanto por nombre exacto como por nombre normalizado (sin espacios, en minúsculas)
-      commercialUserMap.set(user.name.toLowerCase(), user);
-      commercialUserMap.set(user.name.toLowerCase().replace(/\s+/g, ''), user);
-    }
-  });
-  
-  // Enviar notificaciones para cada comercial
-  await Promise.all(commercials.map(async (commercial) => {
-    try {
-      // Buscar si existe un usuario para este comercial (intentando varias formas de normalización)
-      let commercialUser = commercialUserMap.get(commercial.name.toLowerCase());
+  // MODIFICACIÓN TEMPORAL: En lugar de enviar a todos los comerciales, solo enviamos al correo de prueba
+  try {
+    console.log(`Enviando notificación de prueba a ${testEmail}`);
+    
+    // Enviar email de notificación al correo de prueba
+    const emailResult = await sendCommercialNotification(
+      testEmail,
+      "Usuario de Prueba",
+      statement.period
+    );
+    
+    const emailSent = emailResult.status === 200;
+    
+    if (emailSent) {
+      successCount = 1;
+      console.log(`Notificación enviada con éxito a ${testEmail}`);
       
-      // Si no se encuentra, intentar sin espacios
-      if (!commercialUser) {
-        commercialUser = commercialUserMap.get(commercial.name.toLowerCase().replace(/\s+/g, ''));
-      }
-      
-      // Si aún no se encuentra, intentar con la primera parte del nombre (para nombres compuestos)
-      if (!commercialUser && commercial.name.includes(' ')) {
-        const firstName = commercial.name.split(' ')[0].toLowerCase();
-        // Buscar usuarios que contengan este nombre
-        for (const [key, user] of commercialUserMap.entries()) {
-          if (key.includes(firstName)) {
-            commercialUser = user;
-            break;
-          }
-        }
-      }
-      
-      if (!commercialUser) {
-        console.warn(`No se encontró usuario para el comercial ${commercial.name}`);
-        failedCount++;
-        
-        // Registrar notificación fallida
+      // Si hay comerciales reales, registramos la notificación para el primero
+      if (commercials.length > 0) {
         await registerNotification(
-          commercial.id,
+          commercials[0].id,
           statement.id,
           null,
-          false,
-          `No existe usuario para el comercial ${commercial.name}`
+          true,
+          "Notificación de prueba enviada"
         );
-        return;
       }
-      
-      // Enviar email de notificación (sin token, solo con enlace a la plataforma)
-      const emailResult = await sendCommercialNotification(
-        commercial.email,
-        commercial.name,
-        statement.period
-      );
-      
-      const emailSent = emailResult.status === 200;
-      
-      // Registrar notificación
-      await registerNotification(
-        commercial.id,
-        statement.id,
-        null, // Ya no usamos tokens
-        emailSent,
-        emailSent ? undefined : 'Error al enviar email'
-      );
-      
-      if (emailSent) {
-        successCount++;
-      } else {
-        failedCount++;
-      }
-    } catch (error) {
-      console.error(`Error al notificar al comercial ${commercial.name}:`, error);
-      failedCount++;
-      
-      // Intentar registrar el error
+    } else {
+      failedCount = 1;
+      console.error(`Error al enviar notificación de prueba a ${testEmail}`);
+    }
+  } catch (error) {
+    console.error('Error al enviar notificación de prueba:', error);
+    failedCount = 1;
+    
+    // Si hay comerciales reales, registramos el error para el primero
+    if (commercials.length > 0) {
       try {
         await registerNotification(
-          commercial.id,
+          commercials[0].id,
           statement.id,
           null,
           false,
@@ -706,10 +662,10 @@ export const notifyAllCommercials = async (statement: BankStatement): Promise<{
         console.error('Error al registrar notificación de error:', regError);
       }
     }
-  }));
+  }
   
   return {
-    total: commercials.length,
+    total: commercials.length > 0 ? 1 : 0, // Solo contamos 1 para la prueba
     success: successCount,
     failed: failedCount
   };

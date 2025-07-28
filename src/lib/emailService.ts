@@ -15,12 +15,12 @@ emailjs.init({
 });
 
 /**
- * Envía un email con un token de acceso o notificación a un comercial
+ * Envía un email con un enlace de acceso a un comercial usando una plantilla fija
  * @param commercialEmail Email del comercial
  * @param commercialName Nombre del comercial
- * @param url URL para acceder (puede ser un token o enlace directo)
+ * @param url URL para acceder a la plataforma
  * @param period Período del extracto
- * @param isNotification Si es true, envía una notificación sin token
+ * @param isNotification Parámetro mantenido por compatibilidad
  * @returns Promesa que resuelve cuando el email se ha enviado
  */
 export const sendCommercialAccessToken = async (
@@ -31,40 +31,19 @@ export const sendCommercialAccessToken = async (
   isNotification: boolean = false
 ): Promise<{status: number, text: string}> => {
   try {
-    // Determinar qué plantilla usar según el tipo de mensaje
-    const templateId = isNotification ? NOTIFICATION_TEMPLATE_ID : TEMPLATE_ID;
+    // Usar la plantilla de notificación que ya ha sido modificada en EmailJS
+    // con el formato fijo: "Hello Team, You have been granted access..."
+    const templateId = NOTIFICATION_TEMPLATE_ID;
     
-    // Preparar datos para la plantilla
+    // Preparar datos mínimos para la plantilla
+    // La plantilla ya tiene el texto fijo configurado en EmailJS
     const templateParams: Record<string, string> = {
       to_email: commercialEmail,
-      to_name: commercialName,
-      company_name: 'Fin Flow',
-      period: period
+      to_name: 'Team', // Usar "Team" como se especifica en el texto fijo
+      app_url: url // URL de acceso a la plataforma
     };
     
-    // Agregar parámetros específicos según el tipo de mensaje
-    if (isNotification) {
-      // Para notificación sin token
-      templateParams.app_url = url;
-      templateParams.message = 'Tienes transacciones pendientes por clasificar';
-    } else {
-      // Para acceso con token
-      templateParams.token_url = url;
-      
-      // Extraer fecha de expiración del token de la URL si está disponible
-      const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + 7); // Por defecto 7 días
-      
-      const formattedDate = expiryDate.toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
-      
-      templateParams.expiry_date = formattedDate;
-    }
-    
-    // Enviar el email usando EmailJS
+    // Enviar el email usando EmailJS con la plantilla fija
     const response = await emailjs.send(
       SERVICE_ID,
       templateId,
